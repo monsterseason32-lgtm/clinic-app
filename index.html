@@ -4,16 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>คลินิกชุมชนอุ่นใจ</title>
-    <!-- นำเข้า Tailwind CSS และฟอนต์ที่อ่านง่ายสำหรับผู้สูงอายุ -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: 'Noto Sans Thai', sans-serif; }
+        body { font-family: 'Noto Sans Thai', sans-serif; overflow-x: hidden; }
         .hidden { display: none; }
-        /* ป้องกันการ Scroll แนวนอน */
-        body { overflow-x: hidden; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 pb-10">
@@ -21,10 +18,11 @@
     <!-- 1. หน้าจอโหลด (Loading State) -->
     <div id="loader" class="min-h-screen flex flex-col items-center justify-center bg-white">
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-teal-500 mb-4 border-solid"></div>
-        <p class="text-xl font-bold text-slate-500">กำลังตรวจสอบข้อมูล...</p>
+        <p id="loaderStatus" class="text-xl font-bold text-slate-500">กำลังตรวจสอบข้อมูล...</p>
+        <p id="debugLog" class="text-xs text-slate-300 mt-4 px-10 text-center"></p>
     </div>
 
-    <!-- 2. หน้าแดชบอร์ด (Dashboard View - แสดงผลเมื่อพบข้อมูลในระบบแล้ว) -->
+    <!-- 2. หน้าแดชบอร์ด (Dashboard View) -->
     <div id="dashboardView" class="hidden max-w-md mx-auto">
         <div class="bg-teal-600 text-white p-6 rounded-b-[3rem] shadow-xl mb-6">
             <h1 class="text-2xl font-bold text-center mb-6">ข้อมูลคนไข้</h1>
@@ -38,7 +36,6 @@
         </div>
 
         <div class="px-5 space-y-6">
-            <!-- ส่วนที่ 1: ข้อมูลสุขภาพเบื้องต้น -->
             <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
                 <h3 class="text-lg font-bold text-teal-700 mb-3 flex items-center">
                     <span class="mr-2 text-2xl">🩺</span> ประวัติสุขภาพของคุณ
@@ -59,24 +56,20 @@
                 </div>
             </div>
 
-            <!-- ส่วนที่ 2: รายการนัดหมายที่กำลังจะมาถึง -->
             <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
                 <h3 class="text-lg font-bold text-teal-700 mb-4 flex items-center">
                     <span class="mr-2 text-2xl">📅</span> วันที่นัดหมายตรวจ
                 </h3>
                 <div id="apptList" class="space-y-3">
-                    <!-- รายการนัดจะถูกแสดงที่นี่ผ่าน JavaScript -->
                     <p class="text-slate-400 text-center py-4 italic">ยังไม่มีรายการนัดหมายใหม่</p>
                 </div>
             </div>
             
-            <button onclick="liff.closeWindow()" class="w-full bg-slate-200 text-slate-600 font-bold py-5 rounded-3xl text-xl hover:bg-slate-300 transition-colors">
-                ปิดหน้าต่าง
-            </button>
+            <button onclick="liff.closeWindow()" class="w-full bg-slate-200 text-slate-600 font-bold py-5 rounded-3xl text-xl">ปิดหน้าต่าง</button>
         </div>
     </div>
 
-    <!-- 3. หน้าฟอร์มลงทะเบียน (Registration View - แสดงผลสำหรับคนไข้ใหม่) -->
+    <!-- 3. หน้าฟอร์มลงทะเบียน (Registration View) -->
     <div id="registerView" class="hidden max-w-md mx-auto">
         <div class="bg-teal-600 text-white p-8 rounded-b-[3rem] text-center shadow-lg mb-8">
             <h1 class="text-3xl font-bold">ยินดีต้อนรับ</h1>
@@ -86,7 +79,7 @@
             <input type="hidden" id="uid">
             <div>
                 <label class="block font-bold text-slate-600 mb-2 ml-2 text-lg">ชื่อ - นามสกุล</label>
-                <input type="text" id="name" required placeholder="เช่น คุณตาสมชาย ใจดี" class="w-full p-4 text-xl rounded-2xl border-2 border-slate-200 outline-none focus:border-teal-500 shadow-sm">
+                <input type="text" id="name" required placeholder="เช่น คุณตาสมชาย ใจดี" class="w-full p-4 text-xl rounded-2xl border-2 border-slate-200 outline-none focus:border-teal-500">
             </div>
             <div class="flex gap-4">
                 <div class="flex-1">
@@ -102,64 +95,81 @@
                 <label class="block font-bold text-slate-600 mb-2 ml-2 text-lg">โรคประจำตัว / แพ้ยา</label>
                 <textarea id="disease" rows="2" placeholder="หากไม่มีให้พิมพ์ว่า - ไม่มี -" class="w-full p-4 text-xl rounded-2xl border-2 border-slate-200 outline-none resize-none"></textarea>
             </div>
-            <button type="submit" id="regBtn" class="w-full bg-teal-600 text-white font-bold text-2xl py-5 rounded-3xl shadow-lg active:scale-95 transition-all mt-4">
-                บันทึกข้อมูลประวัติ
-            </button>
+            <button type="submit" id="regBtn" class="w-full bg-teal-600 text-white font-bold text-2xl py-5 rounded-3xl shadow-lg mt-4">บันทึกข้อมูลประวัติ</button>
         </form>
     </div>
 
     <script>
-        // กำหนดค่าคงที่สำหรับการเชื่อมต่อ
+        // 🌟 ตรวจสอบรหัส 2 จุดนี้ให้ถูกต้องที่สุด 🌟
         const LIFF_ID = "2009580376-INQkgBY4"; 
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwSA7bgT1h3H0qRQwBPFi53Eg2riLpMQ7-5NlWiwfvqFNkEVfutfaY8GQ5cSLGRHi-q/exec";
 
-        // ฟังก์ชันเริ่มต้นแอปพลิเคชัน
+        function setDebug(msg) {
+            console.log(msg);
+            document.getElementById('debugLog').innerText = msg;
+        }
+
         async function initApp() {
+            // ระบบป้องกันการค้าง (Timeout 15 วินาที)
+            const timeout = setTimeout(() => {
+                document.getElementById('loaderStatus').innerText = "เชื่อมต่อล่าช้า...";
+                document.getElementById('loaderStatus').classList.add('text-orange-500');
+                setDebug("Timeout: ตรวจสอบสัญญาณอินเทอร์เน็ตหรือ URL ของ GAS");
+            }, 15000);
+
             try {
+                setDebug("Step 1: กำลังเริ่มต้น LIFF...");
                 await liff.init({ liffId: LIFF_ID });
                 
-                // ตรวจสอบการเข้าสู่ระบบ
                 if (!liff.isLoggedIn()) {
+                    setDebug("Redirecting to Login...");
                     liff.login();
                     return;
                 }
                 
+                setDebug("Step 2: ดึงข้อมูล Profile...");
                 const profile = await liff.getProfile();
                 document.getElementById('uid').value = profile.userId;
 
-                // 🔍 ส่งคำขอตรวจสอบข้อมูลคนไข้ไปยังระบบหลังบ้าน
+                setDebug("Step 3: ติดต่อฐานข้อมูล Google Sheets...");
+                // ส่งคำขอพร้อม AbortController เพื่อทำ Timeout สำหรับ Fetch
+                const controller = new AbortController();
+                const fetchTimeout = setTimeout(() => controller.abort(), 10000);
+
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "check_user", uid: profile.userId })
+                    body: JSON.stringify({ action: "check_user", uid: profile.userId }),
+                    signal: controller.signal
                 });
                 
-                if (!res.ok) throw new Error("Network response was not ok");
+                clearTimeout(fetchTimeout);
+                if (!res.ok) throw new Error("Google Script ตอบสนองผิดพลาด (HTTP " + res.status + ")");
+                
                 const data = await res.json();
+                setDebug("Step 4: ประมวลผลข้อมูล...");
 
-                // ซ่อนหน้าจอโหลด
+                clearTimeout(timeout);
                 document.getElementById('loader').classList.add('hidden');
 
                 if (data.exists) {
-                    // หากพบข้อมูล ให้แสดงหน้าแดชบอร์ด
                     showDashboard(data.patient, data.appointments, profile.pictureUrl);
                 } else {
-                    // หากไม่พบข้อมูล ให้แสดงหน้าลงทะเบียน
                     document.getElementById('registerView').classList.remove('hidden');
                 }
             } catch (err) {
-                console.error("Initialization Error:", err);
+                clearTimeout(timeout);
+                console.error(err);
+                setDebug("Error: " + err.message);
                 Swal.fire({
-                    title: 'เกิดข้อผิดพลาด',
-                    text: 'ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่อีกครั้งในภายหลัง',
+                    title: 'ไม่สามารถโหลดข้อมูลได้',
+                    text: 'สาเหตุ: ' + err.message + '\nกรุณาตรวจสอบการตั้งค่า GAS หรือลองใหม่อีกครั้ง',
                     icon: 'error',
                     confirmButtonColor: '#0d9488'
                 });
-                document.getElementById('loader').innerHTML = '<p class="text-red-500 font-bold">ไม่สามารถเชื่อมต่อระบบได้</p>';
             }
         }
 
-        // ฟังก์ชันแสดงข้อมูลบนแดชบอร์ด
         function showDashboard(patient, appointments, pic) {
             document.getElementById('dashboardView').classList.remove('hidden');
             document.getElementById('dashName').innerText = patient.name;
@@ -167,10 +177,7 @@
             document.getElementById('dashAge').innerText = `${patient.age} ปี`;
             document.getElementById('dashPhone').innerText = patient.phone;
             document.getElementById('dashDisease').innerText = patient.disease || "ไม่มีข้อมูล";
-            
-            if(pic) {
-                document.getElementById('dashImg').src = pic;
-            }
+            if(pic) document.getElementById('dashImg').src = pic;
 
             const list = document.getElementById('apptList');
             if (appointments && appointments.length > 0) {
@@ -186,63 +193,41 @@
                         </div>
                     </div>
                 `).join('');
-            } else {
-                list.innerHTML = `
-                    <div class="p-6 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                        <p class="text-slate-400 italic">ขณะนี้ยังไม่มีคิวนัดตรวจใหม่</p>
-                    </div>
-                `;
             }
         }
 
-        // ฟังก์ชันจัดการการลงทะเบียน
         async function handleRegister(e) {
             e.preventDefault();
             const btn = document.getElementById('regBtn');
-            const originalText = btn.innerText;
-            
             btn.disabled = true;
-            btn.innerHTML = `<div class="animate-spin rounded-full h-6 w-6 border-t-2 border-white mr-2 inline-block"></div> กำลังบันทึก...`;
-
-            const payload = {
-                action: "register",
-                uid: document.getElementById('uid').value,
-                name: document.getElementById('name').value,
-                phone: document.getElementById('phone').value,
-                age: document.getElementById('age').value,
-                disease: document.getElementById('disease').value
-            };
+            btn.innerHTML = `<div class="animate-spin rounded-full h-6 w-6 border-t-2 border-white mr-2 inline-block border-solid"></div> กำลังบันทึก...`;
 
             try {
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        action: "register",
+                        uid: document.getElementById('uid').value,
+                        name: document.getElementById('name').value,
+                        phone: document.getElementById('phone').value,
+                        age: document.getElementById('age').value,
+                        disease: document.getElementById('disease').value
+                    })
                 });
                 const result = await res.json();
-
                 if(result.success) {
-                    Swal.fire({
-                        title: 'ลงทะเบียนสำเร็จ',
-                        text: 'ระบบได้บันทึกประวัติของคุณแล้ว ขอบคุณค่ะ',
-                        icon: 'success',
-                        confirmButtonColor: '#0d9488'
-                    }).then(() => {
-                        // โหลดหน้าใหม่เพื่อเข้าสู่หน้าแดชบอร์ด
-                        location.reload();
-                    });
+                    Swal.fire('ลงทะเบียนสำเร็จ', 'บันทึกข้อมูลแล้ว', 'success').then(() => location.reload());
                 } else {
-                    throw new Error(result.message || 'บันทึกข้อมูลไม่สำเร็จ');
+                    throw new Error(result.message);
                 }
             } catch (error) {
-                console.error("Registration Error:", error);
                 Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
                 btn.disabled = false;
-                btn.innerText = originalText;
+                btn.innerText = "บันทึกข้อมูลประวัติ";
             }
         }
 
-        // เรียกใช้งานเมื่อหน้าเว็บโหลดเสร็จ
         window.onload = initApp;
     </script>
 </body>
