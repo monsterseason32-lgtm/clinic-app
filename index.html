@@ -11,13 +11,14 @@
     <style>
         body { font-family: 'Noto Sans Thai', sans-serif; overflow-x: hidden; }
         .hidden { display: none; }
+        .animate-spin { border-top-color: #14b8a6; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 pb-10">
 
     <!-- 1. หน้าจอโหลด (Loading State) -->
     <div id="loader" class="min-h-screen flex flex-col items-center justify-center bg-white">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-teal-500 mb-4 border-solid"></div>
+        <div class="animate-spin rounded-full h-16 w-16 border-4 border-slate-200 mb-4"></div>
         <p id="loaderStatus" class="text-xl font-bold text-slate-500">กำลังตรวจสอบข้อมูล...</p>
         <p id="debugLog" class="text-xs text-slate-300 mt-4 px-10 text-center"></p>
     </div>
@@ -27,7 +28,9 @@
         <div class="bg-teal-600 text-white p-6 rounded-b-[3rem] shadow-xl mb-6">
             <h1 class="text-2xl font-bold text-center mb-6">ข้อมูลคนไข้</h1>
             <div class="flex items-center space-x-4">
-                <img id="dashImg" src="" alt="โปรไฟล์" class="w-20 h-20 rounded-full border-4 border-white shadow-md bg-teal-100 object-cover" onerror="this.src='https://via.placeholder.com/80?text=Profile'">
+                <!-- แก้ไข onerror เพื่อป้องกันการวนลูป และใช้ภาพ SVG แทนการต่อเน็ตไปหา placeholder -->
+                <img id="dashImg" src="" alt="โปรไฟล์" class="w-20 h-20 rounded-full border-4 border-white shadow-md bg-teal-100 object-cover" 
+                     onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2394a3b8\'%3E%3Cpath d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/%3E%3C/svg%3E';">
                 <div>
                     <p id="dashName" class="text-2xl font-bold italic"></p>
                     <p id="dashHN" class="text-lg opacity-90 font-mono"></p>
@@ -100,56 +103,49 @@
     </div>
 
     <script>
-        // 🌟 ตรวจสอบรหัส 2 จุดนี้ให้ถูกต้องที่สุด 🌟
         const LIFF_ID = "2009580376-INQkgBY4"; 
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwSA7bgT1h3H0qRQwBPFi53Eg2riLpMQ7-5NlWiwfvqFNkEVfutfaY8GQ5cSLGRHi-q/exec";
 
         function setDebug(msg) {
             console.log(msg);
-            document.getElementById('debugLog').innerText = msg;
+            const el = document.getElementById('debugLog');
+            if(el) el.innerText = msg;
         }
 
         async function initApp() {
-            // ระบบป้องกันการค้าง (Timeout 15 วินาที)
             const timeout = setTimeout(() => {
-                document.getElementById('loaderStatus').innerText = "เชื่อมต่อล่าช้า...";
-                document.getElementById('loaderStatus').classList.add('text-orange-500');
-                setDebug("Timeout: ตรวจสอบสัญญาณอินเทอร์เน็ตหรือ URL ของ GAS");
-            }, 15000);
+                const status = document.getElementById('loaderStatus');
+                if(status) {
+                    status.innerText = "การเชื่อมต่อล่าช้า...";
+                    status.classList.add('text-orange-500');
+                }
+                setDebug("ตรวจสอบ GAS URL หรือสัญญาณอินเทอร์เน็ต");
+            }, 10000);
 
             try {
-                setDebug("Step 1: กำลังเริ่มต้น LIFF...");
+                setDebug("กำลังเริ่ม LIFF...");
                 await liff.init({ liffId: LIFF_ID });
                 
                 if (!liff.isLoggedIn()) {
-                    setDebug("Redirecting to Login...");
                     liff.login();
                     return;
                 }
                 
-                setDebug("Step 2: ดึงข้อมูล Profile...");
                 const profile = await liff.getProfile();
                 document.getElementById('uid').value = profile.userId;
 
-                setDebug("Step 3: ติดต่อฐานข้อมูล Google Sheets...");
-                // ส่งคำขอพร้อม AbortController เพื่อทำ Timeout สำหรับ Fetch
-                const controller = new AbortController();
-                const fetchTimeout = setTimeout(() => controller.abort(), 10000);
-
+                setDebug("กำลังติดต่อฐานข้อมูล...");
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "check_user", uid: profile.userId }),
-                    signal: controller.signal
+                    body: JSON.stringify({ action: "check_user", uid: profile.userId })
                 });
                 
-                clearTimeout(fetchTimeout);
-                if (!res.ok) throw new Error("Google Script ตอบสนองผิดพลาด (HTTP " + res.status + ")");
+                if (!res.ok) throw new Error("Google Script Error: " + res.status);
                 
                 const data = await res.json();
-                setDebug("Step 4: ประมวลผลข้อมูล...");
-
                 clearTimeout(timeout);
+                
                 document.getElementById('loader').classList.add('hidden');
 
                 if (data.exists) {
@@ -159,11 +155,10 @@
                 }
             } catch (err) {
                 clearTimeout(timeout);
-                console.error(err);
                 setDebug("Error: " + err.message);
                 Swal.fire({
-                    title: 'ไม่สามารถโหลดข้อมูลได้',
-                    text: 'สาเหตุ: ' + err.message + '\nกรุณาตรวจสอบการตั้งค่า GAS หรือลองใหม่อีกครั้ง',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถโหลดข้อมูลได้: ' + err.message,
                     icon: 'error',
                     confirmButtonColor: '#0d9488'
                 });
@@ -177,7 +172,13 @@
             document.getElementById('dashAge').innerText = `${patient.age} ปี`;
             document.getElementById('dashPhone').innerText = patient.phone;
             document.getElementById('dashDisease').innerText = patient.disease || "ไม่มีข้อมูล";
-            if(pic) document.getElementById('dashImg').src = pic;
+            
+            const img = document.getElementById('dashImg');
+            if(pic) {
+                img.src = pic;
+            } else {
+                img.dispatchEvent(new Event('onerror'));
+            }
 
             const list = document.getElementById('apptList');
             if (appointments && appointments.length > 0) {
@@ -200,7 +201,7 @@
             e.preventDefault();
             const btn = document.getElementById('regBtn');
             btn.disabled = true;
-            btn.innerHTML = `<div class="animate-spin rounded-full h-6 w-6 border-t-2 border-white mr-2 inline-block border-solid"></div> กำลังบันทึก...`;
+            btn.innerHTML = `<div class="animate-spin rounded-full h-6 w-6 border-t-2 border-white mr-2 inline-block"></div> กำลังบันทึก...`;
 
             try {
                 const res = await fetch(GAS_URL, {
