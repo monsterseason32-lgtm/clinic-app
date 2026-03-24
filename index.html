@@ -80,8 +80,8 @@
 
     <script>
         // 🌟 ใส่ข้อมูล LIFF ID และ Web App URL ของคุณ
-        const LIFF_ID = "2009580376-INQkgBY4"; 
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwSA7bgT1h3H0qRQwBPFi53Eg2riLpMQ7-5NlWiwfvqFNkEVfutfaY8GQ5cSLGRHi-q/exec";
+        const LIFF_ID = "YOUR_LIFF_ID"; 
+        const GAS_URL = "YOUR_GAS_URL";
 
         async function main() {
             if (LIFF_ID === "YOUR_LIFF_ID" || !LIFF_ID) {
@@ -126,7 +126,12 @@
             };
 
             try {
-                let response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(formData) });
+                // เพิ่ม headers เพื่อให้ส่งข้อมูลผ่านระบบ CORS ของ Google ได้อย่างปลอดภัย
+                let response = await fetch(GAS_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(formData) 
+                });
                 let result = await response.json();
 
                 if(result.success) {
@@ -146,10 +151,13 @@
                         }
                     });
                 } else {
-                    throw new Error(result.message);
+                    throw new Error(result.message); // โยน Error Message จากหลังบ้านออกมา
                 }
             } catch (error) {
-                Swal.fire('เกิดข้อผิดพลาด', 'กรุณาลองใหม่อีกครั้ง', 'error');
+                // เปลี่ยนให้แสดงข้อความ Error จากระบบหลังบ้าน (แทนการแสดงคำว่า กรุณาลองใหม่อีกครั้ง)
+                console.error("Error Details:", error);
+                Swal.fire('เกิดข้อผิดพลาด', error.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+                
                 btn.innerHTML = originalBtnText;
                 btn.disabled = false;
             }
