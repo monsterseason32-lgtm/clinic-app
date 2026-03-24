@@ -79,7 +79,7 @@
     </div>
 
     <script>
-        // 🌟 ใส่ข้อมูล LIFF ID และ Web App URL ของคุณ
+        // 🌟 อัปเดตข้อมูล LIFF ID และ Web App URL ของจริงแล้ว!
         const LIFF_ID = "2009580376-INQkgBY4"; 
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwSA7bgT1h3H0qRQwBPFi53Eg2riLpMQ7-5NlWiwfvqFNkEVfutfaY8GQ5cSLGRHi-q/exec";
 
@@ -154,7 +154,7 @@
                     throw new Error(result.message); // โยน Error Message จากหลังบ้านออกมา
                 }
             } catch (error) {
-                // เปลี่ยนให้แสดงข้อความ Error จากระบบหลังบ้าน (แทนการแสดงคำว่า กรุณาลองใหม่อีกครั้ง)
+                // แสดงข้อความ Error จากระบบหลังบ้านอย่างชัดเจน
                 console.error("Error Details:", error);
                 Swal.fire('เกิดข้อผิดพลาด', error.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
                 
