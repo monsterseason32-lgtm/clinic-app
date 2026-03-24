@@ -3,165 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ลงทะเบียนทำประวัติ - คลินิกชุมชนอุ่นใจ</title>
+    <title>คลินิกชุมชนอุ่นใจ</title>
+    <!-- นำเข้า Tailwind CSS และฟอนต์ที่อ่านง่ายสำหรับผู้สูงอายุ -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['"Noto Sans Thai"', 'sans-serif'], },
-                    colors: {
-                        clinic: { 50: '#f0fdfa', 100: '#ccfbf1', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        #mainApp { display: none; }
+        body { font-family: 'Noto Sans Thai', sans-serif; }
+        .hidden { display: none; }
+        /* ป้องกันการ Scroll แนวนอน */
+        body { overflow-x: hidden; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased pb-10">
+<body class="bg-slate-50 text-slate-800 pb-10">
 
-    <div id="loadingApp" class="min-h-screen flex flex-col items-center justify-center">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-clinic-500 mb-4"></div>
-        <h2 class="text-2xl font-bold text-slate-600">กำลังเตรียมระบบ...</h2>
+    <!-- 1. หน้าจอโหลด (Loading State) -->
+    <div id="loader" class="min-h-screen flex flex-col items-center justify-center bg-white">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-teal-500 mb-4 border-solid"></div>
+        <p class="text-xl font-bold text-slate-500">กำลังตรวจสอบข้อมูล...</p>
     </div>
 
-    <div id="mainApp" class="max-w-md mx-auto bg-slate-100 min-h-screen">
-        <!-- Header -->
-        <div class="bg-clinic-600 text-white p-6 rounded-b-3xl shadow-lg mb-6">
-            <h1 class="text-3xl font-bold text-center mb-4">คลินิกชุมชนอุ่นใจ</h1>
-            <p class="text-center text-clinic-100 mb-4">ระบบลงทะเบียนประวัติคนไข้ใหม่</p>
-            <div class="flex items-center bg-white/20 p-4 rounded-2xl backdrop-blur-sm">
-                <img id="profileImg" src="https://via.placeholder.com/150" alt="Profile" class="w-16 h-16 rounded-full border-2 border-white shadow-sm object-cover mr-4">
+    <!-- 2. หน้าแดชบอร์ด (Dashboard View - แสดงผลเมื่อพบข้อมูลในระบบแล้ว) -->
+    <div id="dashboardView" class="hidden max-w-md mx-auto">
+        <div class="bg-teal-600 text-white p-6 rounded-b-[3rem] shadow-xl mb-6">
+            <h1 class="text-2xl font-bold text-center mb-6">ข้อมูลคนไข้</h1>
+            <div class="flex items-center space-x-4">
+                <img id="dashImg" src="" alt="โปรไฟล์" class="w-20 h-20 rounded-full border-4 border-white shadow-md bg-teal-100 object-cover" onerror="this.src='https://via.placeholder.com/80?text=Profile'">
                 <div>
-                    <p class="text-lg opacity-90">เชื่อมต่อบัญชี LINE:</p>
-                    <p id="lineName" class="text-2xl font-bold truncate">ผู้ใช้งาน</p>
+                    <p id="dashName" class="text-2xl font-bold italic"></p>
+                    <p id="dashHN" class="text-lg opacity-90 font-mono"></p>
                 </div>
             </div>
         </div>
 
-        <form id="clinicForm" class="px-4" onsubmit="submitForm(event)">
-            <input type="hidden" id="uid" name="uid">
-
-            <div class="bg-white p-6 rounded-3xl shadow-sm mb-6 border border-slate-200">
-                <div class="space-y-5">
-                    <div>
-                        <label class="block text-xl font-bold text-slate-700 mb-2">ชื่อ - นามสกุล</label>
-                        <input type="text" id="name" required placeholder="เช่น สมชาย ใจดี" class="w-full p-4 text-xl border-2 border-slate-200 rounded-2xl focus:border-clinic-500 outline-none">
+        <div class="px-5 space-y-6">
+            <!-- ส่วนที่ 1: ข้อมูลสุขภาพเบื้องต้น -->
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                <h3 class="text-lg font-bold text-teal-700 mb-3 flex items-center">
+                    <span class="mr-2 text-2xl">🩺</span> ประวัติสุขภาพของคุณ
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-2xl text-center">
+                        <p class="text-slate-400 text-sm">อายุ</p>
+                        <p id="dashAge" class="text-xl font-bold text-slate-700"></p>
                     </div>
-                    <div>
-                        <label class="block text-xl font-bold text-slate-700 mb-2">เบอร์โทรศัพท์</label>
-                        <input type="tel" id="phone" required placeholder="08X-XXX-XXXX" class="w-full p-4 text-xl border-2 border-slate-200 rounded-2xl focus:border-clinic-500 outline-none">
+                    <div class="bg-slate-50 p-3 rounded-2xl text-center">
+                        <p class="text-slate-400 text-sm">เบอร์โทร</p>
+                        <p id="dashPhone" class="text-lg font-bold text-slate-700"></p>
                     </div>
-                    <div>
-                        <label class="block text-xl font-bold text-slate-700 mb-2">อายุ (ปี)</label>
-                        <input type="number" id="age" required placeholder="เช่น 65" class="w-full p-4 text-xl border-2 border-slate-200 rounded-2xl focus:border-clinic-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xl font-bold text-slate-700 mb-2">โรคประจำตัว / แพ้ยา</label>
-                        <textarea id="disease" rows="2" placeholder="เช่น เบาหวาน, ความดัน (ถ้าไม่มีให้เว้นว่าง)" class="w-full p-4 text-xl border-2 border-slate-200 rounded-2xl focus:border-clinic-500 outline-none resize-none"></textarea>
-                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-red-50 rounded-2xl border border-red-100">
+                    <p class="text-red-400 text-sm">โรคประจำตัว / แพ้ยา</p>
+                    <p id="dashDisease" class="text-lg font-bold text-red-700"></p>
                 </div>
             </div>
 
-            <button type="submit" id="submitBtn" class="w-full bg-clinic-600 hover:bg-clinic-700 text-white font-bold text-2xl py-5 rounded-3xl shadow-lg transition-all flex justify-center items-center">
-                <span>บันทึกข้อมูลประวัติ</span>
+            <!-- ส่วนที่ 2: รายการนัดหมายที่กำลังจะมาถึง -->
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                <h3 class="text-lg font-bold text-teal-700 mb-4 flex items-center">
+                    <span class="mr-2 text-2xl">📅</span> วันที่นัดหมายตรวจ
+                </h3>
+                <div id="apptList" class="space-y-3">
+                    <!-- รายการนัดจะถูกแสดงที่นี่ผ่าน JavaScript -->
+                    <p class="text-slate-400 text-center py-4 italic">ยังไม่มีรายการนัดหมายใหม่</p>
+                </div>
+            </div>
+            
+            <button onclick="liff.closeWindow()" class="w-full bg-slate-200 text-slate-600 font-bold py-5 rounded-3xl text-xl hover:bg-slate-300 transition-colors">
+                ปิดหน้าต่าง
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. หน้าฟอร์มลงทะเบียน (Registration View - แสดงผลสำหรับคนไข้ใหม่) -->
+    <div id="registerView" class="hidden max-w-md mx-auto">
+        <div class="bg-teal-600 text-white p-8 rounded-b-[3rem] text-center shadow-lg mb-8">
+            <h1 class="text-3xl font-bold">ยินดีต้อนรับ</h1>
+            <p class="opacity-80 mt-2 text-lg">กรุณาลงทะเบียนทำประวัติเพื่อเริ่มใช้งาน</p>
+        </div>
+        <form id="regForm" class="px-6 space-y-6" onsubmit="handleRegister(event)">
+            <input type="hidden" id="uid">
+            <div>
+                <label class="block font-bold text-slate-600 mb-2 ml-2 text-lg">ชื่อ - นามสกุล</label>
+                <input type="text" id="name" required placeholder="เช่น คุณตาสมชาย ใจดี" class="w-full p-4 text-xl rounded-2xl border-2 border-slate-200 outline-none focus:border-teal-500 shadow-sm">
+            </div>
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="block font-bold text-slate-600 mb-2 ml-2 text-lg">เบอร์โทรศัพท์</label>
+                    <input type="tel" id="phone" required placeholder="08x-xxx-xxxx" class="w-full p-4 text-xl rounded-2xl border-2 border-slate-200 outline-none">
+                </div>
+                <div class="w-28">
+                    <label class="block font-bold text-slate-600 mb-2 ml-2 text-lg text-center">อายุ (ปี)</label>
+                    <input type="number" id="age" required placeholder="65" class="w-full p-4 text-xl rounded-2xl border-2 border-slate-200 outline-none text-center">
+                </div>
+            </div>
+            <div>
+                <label class="block font-bold text-slate-600 mb-2 ml-2 text-lg">โรคประจำตัว / แพ้ยา</label>
+                <textarea id="disease" rows="2" placeholder="หากไม่มีให้พิมพ์ว่า - ไม่มี -" class="w-full p-4 text-xl rounded-2xl border-2 border-slate-200 outline-none resize-none"></textarea>
+            </div>
+            <button type="submit" id="regBtn" class="w-full bg-teal-600 text-white font-bold text-2xl py-5 rounded-3xl shadow-lg active:scale-95 transition-all mt-4">
+                บันทึกข้อมูลประวัติ
             </button>
         </form>
     </div>
 
     <script>
-        // 🌟 อัปเดตข้อมูล LIFF ID และ Web App URL ของจริงแล้ว!
+        // กำหนดค่าคงที่สำหรับการเชื่อมต่อ
         const LIFF_ID = "2009580376-INQkgBY4"; 
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwSA7bgT1h3H0qRQwBPFi53Eg2riLpMQ7-5NlWiwfvqFNkEVfutfaY8GQ5cSLGRHi-q/exec";
 
-        async function main() {
-            if (LIFF_ID === "YOUR_LIFF_ID" || !LIFF_ID) {
-                document.getElementById("loadingApp").style.display = "none";
-                document.getElementById("mainApp").style.display = "block";
-                return;
-            }
+        // ฟังก์ชันเริ่มต้นแอปพลิเคชัน
+        async function initApp() {
             try {
                 await liff.init({ liffId: LIFF_ID });
-                if (liff.isLoggedIn()) {
-                    const profile = await liff.getProfile();
-                    document.getElementById("uid").value = profile.userId;
-                    document.getElementById("lineName").textContent = profile.displayName;
-                    if(profile.pictureUrl) document.getElementById("profileImg").src = profile.pictureUrl;
-                    
-                    document.getElementById("loadingApp").style.display = "none";
-                    document.getElementById("mainApp").style.display = "block";
-                } else {
+                
+                // ตรวจสอบการเข้าสู่ระบบ
+                if (!liff.isLoggedIn()) {
                     liff.login();
+                    return;
+                }
+                
+                const profile = await liff.getProfile();
+                document.getElementById('uid').value = profile.userId;
+
+                // 🔍 ส่งคำขอตรวจสอบข้อมูลคนไข้ไปยังระบบหลังบ้าน
+                const res = await fetch(GAS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "check_user", uid: profile.userId })
+                });
+                
+                if (!res.ok) throw new Error("Network response was not ok");
+                const data = await res.json();
+
+                // ซ่อนหน้าจอโหลด
+                document.getElementById('loader').classList.add('hidden');
+
+                if (data.exists) {
+                    // หากพบข้อมูล ให้แสดงหน้าแดชบอร์ด
+                    showDashboard(data.patient, data.appointments, profile.pictureUrl);
+                } else {
+                    // หากไม่พบข้อมูล ให้แสดงหน้าลงทะเบียน
+                    document.getElementById('registerView').classList.remove('hidden');
                 }
             } catch (err) {
-                console.error("LIFF Init Error: ", err);
+                console.error("Initialization Error:", err);
+                Swal.fire({
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่อีกครั้งในภายหลัง',
+                    icon: 'error',
+                    confirmButtonColor: '#0d9488'
+                });
+                document.getElementById('loader').innerHTML = '<p class="text-red-500 font-bold">ไม่สามารถเชื่อมต่อระบบได้</p>';
             }
         }
-        main();
 
-        async function submitForm(event) {
-            event.preventDefault();
-            const btn = document.getElementById("submitBtn");
-            const originalBtnText = btn.innerHTML;
+        // ฟังก์ชันแสดงข้อมูลบนแดชบอร์ด
+        function showDashboard(patient, appointments, pic) {
+            document.getElementById('dashboardView').classList.remove('hidden');
+            document.getElementById('dashName').innerText = patient.name;
+            document.getElementById('dashHN').innerText = `รหัสประจำตัว: ${patient.hn}`;
+            document.getElementById('dashAge').innerText = `${patient.age} ปี`;
+            document.getElementById('dashPhone').innerText = patient.phone;
+            document.getElementById('dashDisease').innerText = patient.disease || "ไม่มีข้อมูล";
             
-            btn.innerHTML = `<div class="animate-spin rounded-full h-8 w-8 border-t-4 border-white mr-3"></div> กำลังบันทึก...`;
-            btn.disabled = true;
+            if(pic) {
+                document.getElementById('dashImg').src = pic;
+            }
 
-            const formData = {
-                action: "register", // ส่งไปบอกหลังบ้านว่านี่คือการลงทะเบียนประวัติ
-                uid: document.getElementById("uid").value || "mock-uid-123",
-                name: document.getElementById("name").value,
-                phone: document.getElementById("phone").value,
-                age: document.getElementById("age").value,
-                disease: document.getElementById("disease").value
+            const list = document.getElementById('apptList');
+            if (appointments && appointments.length > 0) {
+                list.innerHTML = appointments.map(a => `
+                    <div class="flex items-center p-5 bg-teal-50 rounded-2xl border-l-[10px] border-teal-500 shadow-sm">
+                        <div class="flex-1">
+                            <p class="text-teal-900 font-bold text-xl mb-1">${a.date}</p>
+                            <p class="text-slate-700 font-semibold">⏰ เวลา: ${a.time}</p>
+                            <p class="text-slate-500 text-sm mt-1 font-medium">👨‍⚕️ ตรวจโดย: ${a.doctor}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-3 py-1 bg-white text-teal-600 rounded-full text-xs font-bold border border-teal-200 uppercase">${a.status}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                list.innerHTML = `
+                    <div class="p-6 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                        <p class="text-slate-400 italic">ขณะนี้ยังไม่มีคิวนัดตรวจใหม่</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ฟังก์ชันจัดการการลงทะเบียน
+        async function handleRegister(e) {
+            e.preventDefault();
+            const btn = document.getElementById('regBtn');
+            const originalText = btn.innerText;
+            
+            btn.disabled = true;
+            btn.innerHTML = `<div class="animate-spin rounded-full h-6 w-6 border-t-2 border-white mr-2 inline-block"></div> กำลังบันทึก...`;
+
+            const payload = {
+                action: "register",
+                uid: document.getElementById('uid').value,
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                age: document.getElementById('age').value,
+                disease: document.getElementById('disease').value
             };
 
             try {
-                // เพิ่ม headers เพื่อให้ส่งข้อมูลผ่านระบบ CORS ของ Google ได้อย่างปลอดภัย
-                let response = await fetch(GAS_URL, { 
-                    method: 'POST', 
+                const res = await fetch(GAS_URL, {
+                    method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(formData) 
+                    body: JSON.stringify(payload)
                 });
-                let result = await response.json();
+                const result = await res.json();
 
                 if(result.success) {
                     Swal.fire({
-                        title: 'ลงทะเบียนสำเร็จ!',
-                        text: 'ระบบได้บันทึกประวัติของคุณเรียบร้อยแล้ว',
+                        title: 'ลงทะเบียนสำเร็จ',
+                        text: 'ระบบได้บันทึกประวัติของคุณแล้ว ขอบคุณค่ะ',
                         icon: 'success',
-                        confirmButtonText: 'ปิดหน้าต่าง',
                         confirmButtonColor: '#0d9488'
                     }).then(() => {
-                        if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
-                            liff.closeWindow();
-                        } else {
-                            btn.innerHTML = originalBtnText;
-                            btn.disabled = false;
-                            document.getElementById("clinicForm").reset();
-                        }
+                        // โหลดหน้าใหม่เพื่อเข้าสู่หน้าแดชบอร์ด
+                        location.reload();
                     });
                 } else {
-                    throw new Error(result.message); // โยน Error Message จากหลังบ้านออกมา
+                    throw new Error(result.message || 'บันทึกข้อมูลไม่สำเร็จ');
                 }
             } catch (error) {
-                // แสดงข้อความ Error จากระบบหลังบ้านอย่างชัดเจน
-                console.error("Error Details:", error);
-                Swal.fire('เกิดข้อผิดพลาด', error.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
-                
-                btn.innerHTML = originalBtnText;
+                console.error("Registration Error:", error);
+                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
                 btn.disabled = false;
+                btn.innerText = originalText;
             }
         }
+
+        // เรียกใช้งานเมื่อหน้าเว็บโหลดเสร็จ
+        window.onload = initApp;
     </script>
 </body>
 </html>
