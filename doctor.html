@@ -53,7 +53,7 @@
 
         <main class="max-w-6xl mx-auto p-4 md:p-8 grid md:grid-cols-12 gap-8">
             
-            <!-- ฝั่งซ้าย: ค้นหาคนไข้ -->
+            <!-- ฝั่งซ้าย: รายชื่อคนไข้ -->
             <section class="md:col-span-7 space-y-6">
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-6">
@@ -90,8 +90,8 @@
                         <div class="flex items-start justify-between mb-4">
                             <div>
                                 <p class="text-indigo-100 text-xs uppercase tracking-wider mb-1">คนไข้ที่เลือก</p>
-                                <p id="selectedName" class="text-xl font-bold">กรุณาเลือกคนไข้ด้านซ้าย</p>
-                                <p id="selectedHN" class="text-sm opacity-80 font-mono mt-1">-</p>
+                                <p id="selectedName" class="text-xl font-bold text-white">ยังไม่ได้เลือกคนไข้</p>
+                                <p id="selectedHN" class="text-sm opacity-80 font-mono mt-1 text-white">-</p>
                                 <input type="hidden" id="selectedUid">
                             </div>
                             <div class="bg-white/20 p-3 rounded-full text-2xl">👤</div>
@@ -100,7 +100,7 @@
                         <!-- ปุ่มทดสอบแจ้งเตือน -->
                         <button onclick="testNotification()" id="testBtn" 
                                 class="w-full bg-white/20 hover:bg-white/30 border border-white/30 text-white text-sm py-2 rounded-xl transition-all flex items-center justify-center gap-2">
-                            <span>🔔 ทดสอบส่งแจ้งเตือน</span>
+                            <span>🔔 ทดสอบส่งแจ้งเตือนเข้า LINE</span>
                         </button>
                     </div>
 
@@ -141,6 +141,7 @@
     </div>
 
     <script>
+        // ใช้ URL เดิมที่คุณบอสส่งมา
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwSA7bgT1h3H0qRQwBPFi53Eg2riLpMQ7-5NlWiwfvqFNkEVfutfaY8GQ5cSLGRHi-q/exec";
         const STAFF_PIN = "1234"; 
 
@@ -158,6 +159,9 @@
             }
         }
 
+        /**
+         * 📡 ฟังก์ชันดึงรายชื่อคนไข้ (แก้ไข headers เพื่อเลี่ยง CORS)
+         */
         async function loadPatients() {
             try {
                 const res = await fetch(GAS_URL, {
@@ -172,7 +176,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                document.getElementById('patientList').innerHTML = `<p class="text-center text-red-400 py-10">เกิดข้อผิดพลาด: ${err.message}</p>`;
+                document.getElementById('patientList').innerHTML = `<p class="text-center text-red-400 py-10 font-bold">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล<br><span class="text-xs font-normal">${err.message}</span></p>`;
             }
         }
 
@@ -188,7 +192,7 @@
                     <div>
                         <p class="font-bold text-slate-700 text-lg group-hover:text-indigo-700">${p.name}</p>
                         <div class="flex space-x-3 mt-1 text-sm text-slate-400">
-                            <span class="font-mono bg-slate-100 px-2 rounded italic">${p.hn}</span>
+                            <span class="font-mono bg-slate-100 px-2 rounded italic font-bold text-slate-500">${p.hn}</span>
                             <span>📞 ${p.phone}</span>
                         </div>
                     </div>
@@ -226,7 +230,7 @@
         }
 
         /**
-         * 🌟 ฟังก์ชันใหม่: ทดสอบส่งแจ้งเตือน
+         * 🔔 ฟังก์ชันทดสอบแจ้งเตือน
          */
         async function testNotification() {
             const uid = document.getElementById('selectedUid').value;
@@ -237,7 +241,7 @@
 
             btn.disabled = true;
             const originalContent = btn.innerHTML;
-            btn.innerHTML = '<span>⏳ กำลังส่ง...</span>';
+            btn.innerHTML = '<span>⏳ กำลังส่งทดสอบ...</span>';
 
             try {
                 const res = await fetch(GAS_URL, {
@@ -254,7 +258,7 @@
                 if (result.success) {
                     Swal.fire({
                         title: 'ส่งสำเร็จ!',
-                        text: 'ระบบได้ส่งข้อความทดสอบไปยังคนไข้เรียบร้อยแล้ว',
+                        text: 'ระบบได้ส่งข้อความทดสอบไปยัง LINE ของคนไข้แล้ว',
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false
@@ -263,20 +267,23 @@
                     throw new Error(result.message);
                 }
             } catch (err) {
-                Swal.fire('เกิดข้อผิดพลาด', 'ตรวจสอบว่าคุณได้เพิ่ม action: "test_notification" ใน GAS หรือยัง?\n\n' + err.message, 'error');
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถส่งทดสอบได้: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalContent;
             }
         }
 
+        /**
+         * 💾 ฟังก์ชันบันทึกนัดหมาย
+         */
         async function createAppointment(e) {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
             const originalText = btn.innerText;
             
             btn.disabled = true;
-            btn.innerHTML = '<span class="flex items-center justify-center"><svg class="animate-spin h-5 w-5 mr-3 border-t-2 border-white rounded-full" viewBox="0 0 24 24"></svg> กำลังบันทึก...</span>';
+            btn.innerHTML = '<span class="flex items-center justify-center animate-pulse">⏳ กำลังบันทึก...</span>';
 
             const payload = {
                 action: "add_appointment",
@@ -297,19 +304,22 @@
                 
                 if (result.success) {
                     Swal.fire({
-                        title: 'บันทึกนัดหมายสำเร็จ!',
-                        text: 'ระบบได้ส่งข้อความแจ้งเตือนเข้า LINE ของคนไข้เรียบร้อยแล้ว',
+                        title: 'นัดหมายสำเร็จ!',
+                        text: 'บันทึกข้อมูลและแจ้งเตือนคนไข้เรียบร้อยแล้ว',
                         icon: 'success',
                         confirmButtonColor: '#4f46e5'
                     }).then(() => {
                         document.getElementById('apptForm').reset();
                         document.getElementById('apptSection').classList.add('opacity-30', 'pointer-events-none');
-                        document.getElementById('selectedName').innerText = "กรุณาเลือกคนไข้ด้านซ้าย";
+                        document.getElementById('selectedName').innerText = "ยังไม่ได้เลือกคนไข้";
                         document.getElementById('selectedHN').innerText = "-";
                     });
+                } else {
+                    throw new Error(result.message);
                 }
             } catch (err) {
-                Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
+                console.error(err);
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalText;
