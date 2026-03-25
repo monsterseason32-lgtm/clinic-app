@@ -202,7 +202,11 @@
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "check_user", uid: profile.userId })
+                    body: JSON.stringify({ 
+                        action: "check_user", 
+                        uid: profile.userId,
+                        pictureUrl: profile.pictureUrl // 🌟 ส่งรูปล่าสุดไปเช็คด้วย
+                    })
                 });
                 
                 if (!res.ok) throw new Error("Server Error: " + res.status);
@@ -300,6 +304,9 @@
             btn.innerHTML = `<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> กำลังบันทึกข้อมูล...`;
 
             try {
+                // ดึงข้อมูล profile ปัจจุบันเพื่อเอารูปภาพ (ต้องเรียกผ่าน liff)
+                const profile = await liff.getProfile(); 
+
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -309,7 +316,8 @@
                         name: document.getElementById('name').value,
                         phone: document.getElementById('phone').value,
                         age: document.getElementById('age').value,
-                        disease: document.getElementById('disease').value
+                        disease: document.getElementById('disease').value,
+                        pictureUrl: profile.pictureUrl // 🌟 เพิ่มบรรทัดนี้เพื่อส่งรูปไปด้วย
                     })
                 });
                 const result = await res.json();
