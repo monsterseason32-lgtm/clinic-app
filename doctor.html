@@ -93,9 +93,14 @@
                             <input type="hidden" id="selectedUid">
                         </div>
                     </div>
-                    <button onclick="testNotification()" id="testBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
-                        🔔 ทดสอบแจ้งเตือน
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="exportToCSV()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2 rounded-xl text-sm font-bold transition-colors border border-emerald-200">
+                            📥 โหลด Excel
+                        </button>
+                        <button onclick="testNotification()" id="testBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
+                            🔔 ทดสอบ
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Tabs Navigation -->
@@ -177,6 +182,7 @@
         let allPatients = [];
         let weightChartInstance = null;
         let bpChartInstance = null;
+        let currentPatientHistory = null; // ตัวแปรเก็บประวัติไว้สำหรับ Export Excel
 
         function checkPin() {
             const input = document.getElementById('pinInput').value;
@@ -255,6 +261,7 @@
                 const data = await res.json();
                 
                 if (data.success) {
+                    currentPatientHistory = data.history; // บันทึกประวัติเตรียมไว้ดาวน์โหลด
                     renderCharts(data.history);
                     renderApptHistory(data.appointments);
                 }
@@ -425,21 +432,69 @@
             }
         }
 
-        // ฟังก์ชันใหม่: จัดการอัปเดตสถานะนัดหมาย
+        // ฟังก์ชันใหม่: ดาวน์โหลดเป็น Excel (CSV)
+        function exportToCSV() {
+            if (!currentPatientHistory || currentPatientHistory.labels.length === 0) {
+                Swal.fire('ไม่มีข้อมูล', 'คนไข้รายนี้ยังไม่มีประวัติสุขภาพให้ดาวน์โหลด', 'info');
+                return;
+            }
+
+            const name = document.getElementById('selectedName').innerText;
+            // เพิ่ม BOM (\uFEFF) เพื่อให้ Excel อ่านภาษาไทยได้ถูกต้อง
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+            csvContent += "วันที่,น้ำหนัก (kg),ความดัน (SYS),ความดัน (DIA)\n";
+
+            for (let i = 0; i < currentPatientHistory.labels.length; i++) {
+                const date = currentPatientHistory.labels[i];
+                const weight = currentPatientHistory.weights[i] || "-";
+                const sys = currentPatientHistory.sys[i] || "-";
+                const dia = currentPatientHistory.dia[i] || "-";
+                csvContent += `${date},${weight},${sys},${dia}\n`;
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `ประวัติสุขภาพ_${name}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ฟังก์ชันจัดการอัปเดตสถานะนัดหมาย (แก้ไขเพิ่มการจดบันทึก)
         async function updateApptStatus(apptId, newStatus) {
-            if(!confirm(`ยืนยันการเปลี่ยนสถานะคิวตรวจเป็น "${newStatus}" ใช่หรือไม่?`)) return;
+            let noteText = "";
+
+            // ถ้าเป็นการกดยืนยันว่า "ตรวจแล้ว" ให้เด้งหน้าต่างกรอกผลการรักษา
+            if (newStatus === 'ตรวจแล้ว') {
+                const { value: text, isConfirmed } = await Swal.fire({
+                    title: 'บันทึกผลการรักษา',
+                    input: 'textarea',
+                    inputLabel: 'ระบุอาการปัจจุบัน, ผลวินิจฉัย หรือยาที่จ่าย (ถ้ามี)',
+                    inputPlaceholder: 'พิมพ์บันทึกของแพทย์ที่นี่...',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    confirmButtonText: '✅ บันทึกและเสร็จสิ้น',
+                    cancelButtonText: 'ยกเลิก'
+                });
+                
+                if (!isConfirmed) return; // ถ้ายกเลิก ให้หยุดการทำงาน
+                noteText = text || "-";
+            } else {
+                // ถ้าแค่ยกเลิกคิว ก็ถามแบบธรรมดา
+                if(!confirm(`ยืนยันการเปลี่ยนสถานะคิวตรวจเป็น "${newStatus}" ใช่หรือไม่?`)) return;
+            }
             
             try {
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "update_appt", apptId: apptId, status: newStatus })
+                    body: JSON.stringify({ action: "update_appt", apptId: apptId, status: newStatus, note: noteText })
                 });
                 const result = await res.json();
                 
                 if(result.success) {
-                    Swal.fire({ title: 'สำเร็จ', text: 'อัปเดตสถานะเรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false });
-                    // โหลดข้อมูลคนไข้คนนี้ใหม่เพื่ออัปเดตหน้าจอทันที
+                    Swal.fire({ title: 'สำเร็จ', text: 'บันทึกข้อมูลและอัปเดตสถานะเรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false });
                     const uid = document.getElementById('selectedUid').value;
                     const name = document.getElementById('selectedName').innerText;
                     const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '');
