@@ -370,6 +370,7 @@
                         <span class="px-2 py-1 ${a.status === 'ตรวจแล้ว' ? 'bg-green-100 text-green-700' : a.status === 'ยกเลิก' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'} border rounded-md text-[10px] font-bold">${a.status}</span>
                         ${a.status !== 'ตรวจแล้ว' && a.status !== 'ยกเลิก' ? `
                         <div class="flex gap-1 mt-1">
+                            ${a.status === 'รอยืนยัน' ? `<button onclick="editAppointment('${a.id}', '${a.date}', '${a.time}', '${a.doctor}')" class="px-2 py-1 bg-blue-500 text-white rounded text-[10px] hover:bg-blue-600 transition-colors">✏️ แก้ไข</button>` : ''}
                             <button onclick="updateApptStatus('${a.id}', 'ตรวจแล้ว')" class="px-2 py-1 bg-green-500 text-white rounded text-[10px] hover:bg-green-600 transition-colors">✅ มาตรวจ</button>
                             <button onclick="updateApptStatus('${a.id}', 'ยกเลิก')" class="px-2 py-1 bg-red-500 text-white rounded text-[10px] hover:bg-red-600 transition-colors">❌ ยกเลิก</button>
                         </div>` : ''}
@@ -505,6 +506,90 @@
             } catch (err) {
                 Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
             }
+        }
+
+        // ฟังก์ชันแก้ไขนัดหมาย (เปลี่ยนวัน, เวลา, แพทย์)
+        function editAppointment(apptId, dateStr, timeStr, doctorStr) {
+            const parts = dateStr.split('/');
+            let isoDate = '';
+            if (parts.length === 3) {
+                isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            
+            Swal.fire({
+                title: '✏️ แก้ไขคิวนัดหมาย',
+                html: `
+                    <div class="text-left space-y-3 mt-3">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">วันที่นัด</label>
+                            <input type="date" id="editApptDate" value="${isoDate}" class="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">ช่วงเวลา</label>
+                            <select id="editApptTime" class="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                                <option value="09:00 - 10:00" ${timeStr === '09:00 - 10:00' ? 'selected' : ''}>09:00 - 10:00</option>
+                                <option value="10:00 - 11:00" ${timeStr === '10:00 - 11:00' ? 'selected' : ''}>10:00 - 11:00</option>
+                                <option value="11:00 - 12:00" ${timeStr === '11:00 - 12:00' ? 'selected' : ''}>11:00 - 12:00</option>
+                                <option value="13:00 - 14:00" ${timeStr === '13:00 - 14:00' ? 'selected' : ''}>13:00 - 14:00</option>
+                                <option value="14:00 - 15:00" ${timeStr === '14:00 - 15:00' ? 'selected' : ''}>14:00 - 15:00</option>
+                                <option value="15:00 - 16:00" ${timeStr === '15:00 - 16:00' ? 'selected' : ''}>15:00 - 16:00</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">แพทย์ผู้ตรวจ</label>
+                            <input type="text" id="editDoctorName" value="${doctorStr && doctorStr !== '-' && doctorStr !== 'undefined' ? doctorStr : ''}" placeholder="เช่น นพ.สมชาย" class="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                confirmButtonText: 'บันทึกการแก้ไข',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const apptDate = document.getElementById('editApptDate').value;
+                    if (!apptDate) {
+                        Swal.showValidationMessage('กรุณาเลือกวันที่นัด');
+                        return false;
+                    }
+                    return {
+                        apptDate: apptDate,
+                        apptTime: document.getElementById('editApptTime').value,
+                        doctorName: document.getElementById('editDoctorName').value
+                    }
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                        const payload = {
+                            action: "edit_appointment",
+                            apptId: apptId,
+                            apptDate: result.value.apptDate,
+                            apptTime: result.value.apptTime,
+                            doctorName: result.value.doctorName
+                        };
+                        
+                        const res = await fetch(GAS_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        const resData = await res.json();
+                        if(resData.success) {
+                            Swal.fire({ title: 'สำเร็จ', text: 'แก้ไขข้อมูลนัดหมายและส่งข้อความแจ้งเตือนแล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
+                            const uid = document.getElementById('selectedUid').value;
+                            const name = document.getElementById('selectedName').innerText;
+                            const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '');
+                            selectPatient(uid, name, hn);
+                        } else {
+                            throw new Error(resData.message);
+                        }
+                    } catch (err) {
+                        Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
+                    }
+                }
+            });
         }
 
         document.getElementById('pinInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPin(); });
