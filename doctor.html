@@ -58,7 +58,7 @@
 
         <main class="max-w-7xl mx-auto p-4 md:p-6 grid lg:grid-cols-12 gap-6 items-start">
             
-            <!-- ฝั่งซ้าย: รายชื่อคนไข้ (4 คอลัมน์) -->
+            <!-- ฝั่งซ้าย: รายชื่อคนไข้ -->
             <section class="lg:col-span-4 space-y-4">
                 <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
                     <div class="flex justify-between items-center mb-5">
@@ -86,7 +86,7 @@
                 </div>
             </section>
 
-            <!-- ฝั่งขวา: รายละเอียดและการจัดการ (8 คอลัมน์) -->
+            <!-- ฝั่งขวา: รายละเอียดและการจัดการ -->
             <section id="detailSection" class="lg:col-span-8 transition-opacity duration-300 relative">
                 
                 <!-- หน้าจอ 2.1: Clinic Dashboard (หน้าเริ่มต้น) -->
@@ -139,6 +139,7 @@
                         <div class="flex flex-wrap gap-2 w-full md:w-auto relative z-10 mt-3 md:mt-0">
                             <button onclick="editPatientProfile()" class="flex-1 md:flex-none bg-white text-indigo-600 hover:bg-indigo-50 px-3 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center gap-1.5">✏️ แก้ไขประวัติ</button>
                             <button onclick="logVitalsForPatient()" class="flex-1 md:flex-none bg-emerald-400 text-white hover:bg-emerald-500 px-3 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center gap-1.5">➕ บันทึกสุขภาพ</button>
+                            <button onclick="sendDirectMessage()" class="flex-1 md:flex-none bg-blue-500 text-white hover:bg-blue-600 px-3 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center gap-1.5">💬 ส่งข้อความ</button>
                             <button onclick="exportToCSV()" class="flex-1 md:flex-none bg-white/15 hover:bg-white/25 text-white border border-white/20 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 backdrop-blur-sm">📥 Excel</button>
                         </div>
                     </div>
@@ -210,7 +211,7 @@
                 document.getElementById('loginView').classList.add('hidden');
                 document.getElementById('adminView').classList.remove('hidden');
                 loadPatients();
-                loadDashboard(); // 🌟 โหลดหน้าแรกของคลินิก
+                loadDashboard();
             } else {
                 Swal.fire({ title: 'รหัสผ่านผิด!', text: 'กรุณาตรวจสอบรหัสผ่านอีกครั้ง', icon: 'error', confirmButtonColor: '#4f46e5' });
                 document.getElementById('pinInput').value = "";
@@ -375,7 +376,6 @@
                 else if(a.status === 'ยกเลิก') { statusStyle = 'bg-red-50 text-red-600 border-red-200'; borderStyle = 'border-l-red-400'; }
                 else { statusStyle = 'bg-yellow-50 text-yellow-700 border-yellow-200'; borderStyle = 'border-l-yellow-400'; }
 
-                // 🌟 เพิ่มการแสดง Note ผลการรักษาตรงนี้
                 const noteHtml = (a.note && a.note !== '-' && a.note !== '') 
                     ? `<div class="mt-3 p-3 bg-indigo-50/50 rounded-lg text-xs text-slate-700 border border-indigo-100 shadow-sm"><span class="font-bold text-indigo-700 mr-1">📝 บันทึกแพทย์:</span> ${a.note.replace(/\n/g, '<br>')}</div>` 
                     : '';
@@ -400,7 +400,7 @@
                             </div>` : ''}
                         </div>
                     </div>
-                    ${noteHtml} <!-- แสดง Note ผลการรักษา -->
+                    ${noteHtml} 
                 </div>
             `}).join('');
         }
@@ -424,7 +424,7 @@
                     document.getElementById('apptForm').reset();
                     const hn = document.getElementById('selectedHN').innerText.replace('HN: ','').trim();
                     if(hn && hn !== '-') selectPatient(payload.uid, payload.name, hn, currentPatientInfo?.pic);
-                    loadDashboard(); // อัปเดตคิวในหน้าแรกด้วย
+                    loadDashboard();
                 } else throw new Error(result.message);
             } catch (err) { Swal.fire('Error', err.message, 'error'); } 
             finally { btn.disabled = false; btn.innerHTML = originalText; }
@@ -453,7 +453,7 @@
                     const name = document.getElementById('selectedName').innerText;
                     const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '').trim();
                     selectPatient(uid, name, hn, currentPatientInfo?.pic);
-                    loadDashboard(); // อัปเดตคิวในหน้าแรกด้วย
+                    loadDashboard(); 
                 } else throw new Error(result.message);
             } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); }
         }
@@ -489,14 +489,96 @@
                             Swal.fire({ title: 'สำเร็จ', text: 'แก้ไขข้อมูลนัดหมายและส่งข้อความแจ้งเตือนแล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
                             const uid = document.getElementById('selectedUid').value; const name = document.getElementById('selectedName').innerText; const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '').trim();
                             selectPatient(uid, name, hn, currentPatientInfo?.pic);
-                            loadDashboard(); // อัปเดตคิวหน้าแรกด้วย
+                            loadDashboard(); 
                         } else throw new Error(resData.message);
                     } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); }
                 }
             });
         }
 
-        // 🌟 ฟังก์ชันใหม่: ส่งข้อความตรงถึงคนไข้ (Direct Message)
+        function exportToCSV() {
+            if (!currentPatientHistory || currentPatientHistory.labels.length === 0) { Swal.fire('ไม่มีข้อมูล', 'คนไข้รายนี้ยังไม่มีประวัติสุขภาพให้ดาวน์โหลด', 'info'); return; }
+            const name = document.getElementById('selectedName').innerText;
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + "วันที่,น้ำหนัก (kg),ความดัน (SYS),ความดัน (DIA)\n";
+            for (let i = 0; i < currentPatientHistory.labels.length; i++) {
+                csvContent += `${currentPatientHistory.labels[i]},${currentPatientHistory.weights[i] || "-"},${currentPatientHistory.sys[i] || "-"},${currentPatientHistory.dia[i] || "-"}\n`;
+            }
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `ประวัติสุขภาพ_${name}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        function editPatientProfile() {
+            if (!currentPatientInfo) { Swal.fire('แจ้งเตือน', 'กรุณาเลือกคนไข้ก่อนแก้ไขประวัติ', 'warning'); return; }
+            Swal.fire({
+                title: '✏️ แก้ไขประวัติคนไข้',
+                html: `
+                    <div class="text-left space-y-3 mt-4">
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">ชื่อ - นามสกุล</label><input type="text" id="editName" value="${currentPatientInfo.name || ''}" class="w-full p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm bg-slate-50 focus:bg-white transition-colors"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-xs font-semibold text-slate-500 mb-1">เบอร์โทรศัพท์</label><input type="tel" id="editPhone" value="${currentPatientInfo.phone || ''}" class="w-full p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm bg-slate-50 focus:bg-white transition-colors"></div>
+                            <div><label class="block text-xs font-semibold text-slate-500 mb-1">อายุ (ปี)</label><input type="number" id="editAge" value="${currentPatientInfo.age || ''}" class="w-full p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm text-center bg-slate-50 focus:bg-white transition-colors"></div>
+                        </div>
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">ส่วนสูง (ซม.)</label><input type="number" id="editHeight" value="${currentPatientInfo.height || ''}" placeholder="เช่น 165" class="w-full p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm bg-slate-50 focus:bg-white transition-colors"></div>
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">โรคประจำตัว / ประวัติแพ้ยา</label><textarea id="editDisease" rows="2" class="w-full p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm resize-none bg-slate-50 focus:bg-white transition-colors">${currentPatientInfo.disease || ''}</textarea></div>
+                    </div>
+                `,
+                showCancelButton: true, confirmButtonColor: '#4f46e5', cancelButtonColor: '#cbd5e1', confirmButtonText: 'บันทึกข้อมูล', cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const name = document.getElementById('editName').value; if (!name) { Swal.showValidationMessage('กรุณาระบุชื่อ-นามสกุล'); return false; }
+                    return { name: name, phone: document.getElementById('editPhone').value, age: document.getElementById('editAge').value, height: document.getElementById('editHeight').value, disease: document.getElementById('editDisease').value }
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                        const payload = { action: "update_patient_info", uid: currentPatientInfo.uid, ...result.value };
+                        const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+                        const resData = await res.json();
+                        if(resData.success) {
+                            Swal.fire({ title: 'สำเร็จ', text: 'แก้ไขข้อมูลคนไข้เรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false });
+                            document.getElementById('selectedName').innerText = result.value.name;
+                            currentPatientInfo = { ...currentPatientInfo, ...result.value };
+                            loadPatients(); 
+                        } else throw new Error(resData.message);
+                    } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); }
+                }
+            });
+        }
+
+        function logVitalsForPatient() {
+            if (!currentPatientInfo) { Swal.fire('แจ้งเตือน', 'กรุณาเลือกคนไข้ก่อนบันทึกสุขภาพ', 'warning'); return; }
+            Swal.fire({
+                title: '🏥 บันทึกสุขภาพแทนคนไข้',
+                html: `
+                    <div class="text-left space-y-4 mt-4">
+                        <div><label class="block text-xs font-semibold text-slate-500 mb-1">น้ำหนักตัว (กก.)</label><input type="number" step="0.1" id="logWeight" placeholder="เช่น 65.5" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-sm text-center bg-slate-50 focus:bg-white transition-colors"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-xs font-semibold text-slate-500 mb-1">ความดันบน (SYS)</label><input type="number" id="logSys" placeholder="120" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-sm text-center bg-slate-50 focus:bg-white transition-colors"></div>
+                            <div><label class="block text-xs font-semibold text-slate-500 mb-1">ความดันล่าง (DIA)</label><input type="number" id="logDia" placeholder="80" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-sm text-center bg-slate-50 focus:bg-white transition-colors"></div>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#cbd5e1', confirmButtonText: 'บันทึกข้อมูล', cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const weight = document.getElementById('logWeight').value; if (!weight) { Swal.showValidationMessage('กรุณาระบุน้ำหนักตัว'); return false; }
+                    return { weight: weight, sys: document.getElementById('logSys').value, dia: document.getElementById('logDia').value }
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                        const payload = { action: "add_daily_health", uid: currentPatientInfo.uid, weight: result.value.weight, sys: result.value.sys, dia: result.value.dia };
+                        const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+                        const resData = await res.json();
+                        if(resData.success) {
+                            Swal.fire({ title: 'สำเร็จ', text: 'บันทึกข้อมูลสุขภาพและแจ้งคนไข้แล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
+                            selectPatient(currentPatientInfo.uid, currentPatientInfo.name, currentPatientInfo.hn, currentPatientInfo.pic);
+                        } else throw new Error(resData.message);
+                    } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); }
+                }
+            });
+        }
+
         async function sendDirectMessage() {
             if (!currentPatientInfo) { Swal.fire('แจ้งเตือน', 'กรุณาเลือกคนไข้ก่อน', 'warning'); return; }
             
@@ -504,11 +586,7 @@
                 title: '💬 ส่งข้อความถึงคนไข้',
                 input: 'textarea',
                 inputPlaceholder: 'พิมพ์คำแนะนำ, แจ้งเตือนเรื่องอาหาร หรือความห่วงใย...',
-                showCancelButton: true,
-                confirmButtonColor: '#3b82f6',
-                cancelButtonColor: '#cbd5e1',
-                confirmButtonText: 'ส่งข้อความ (เข้า LINE)',
-                cancelButtonText: 'ยกเลิก',
+                showCancelButton: true, confirmButtonColor: '#3b82f6', cancelButtonColor: '#cbd5e1', confirmButtonText: 'ส่งข้อความ (เข้า LINE)', cancelButtonText: 'ยกเลิก',
                 customClass: { input: 'rounded-xl border-slate-200 focus:ring-indigo-500 h-32 text-sm' }
             });
 
@@ -516,21 +594,11 @@
 
             try {
                 Swal.fire({ title: 'กำลังส่งข้อความ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
-                const res = await fetch(GAS_URL, {
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "send_direct_message", uid: currentPatientInfo.uid, message: text })
-                });
+                const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "send_direct_message", uid: currentPatientInfo.uid, message: text }) });
                 const result = await res.json();
-                
-                if(result.success) {
-                    Swal.fire({ title: 'ส่งข้อความสำเร็จ', text: 'ข้อความถูกส่งเข้า LINE ของคนไข้เรียบร้อยแล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
-                } else {
-                    throw new Error(result.message);
-                }
-            } catch (err) {
-                Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
-            }
+                if(result.success) Swal.fire({ title: 'ส่งข้อความสำเร็จ', text: 'ข้อความถูกส่งเข้า LINE ของคนไข้เรียบร้อยแล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
+                else throw new Error(result.message);
+            } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); }
         }
 
         document.getElementById('pinInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPin(); });
