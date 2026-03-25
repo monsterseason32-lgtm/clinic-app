@@ -232,7 +232,7 @@
         let weightChartInstance = null;
         let bpChartInstance = null;
         let currentPatientHistory = null;
-        let currentPatientInfo = null; // เพิ่มตัวแปรเก็บข้อมูลโปรไฟล์คนไข้
+        let currentPatientInfo = null;
 
         function checkPin() {
             const input = document.getElementById('pinInput').value;
@@ -271,22 +271,27 @@
                 container.innerHTML = '<div class="text-center text-slate-400 py-10 bg-slate-50 rounded-xl text-sm border border-dashed border-slate-200">ไม่พบข้อมูลคนไข้</div>';
                 return;
             }
-            container.innerHTML = list.map(p => `
-                <div onclick="selectPatient('${p.uid}', '${p.name}', '${p.hn}', this)" 
-                     class="patient-card p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-indigo-300 hover:shadow-md cursor-pointer transition-all flex justify-between items-center group relative overflow-hidden">
+            container.innerHTML = list.map(p => {
+                // 🌟 เพิ่มเงื่อนไขเช็ครูปภาพ ถ้าไม่มีให้ใช้รูป Default
+                const profileImg = p.pic ? p.pic : 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2394a3b8\'%3E%3Cpath d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/%3E%3C/svg%3E';
+                
+                return `
+                <div onclick="selectPatient('${p.uid}', '${p.name}', '${p.hn}', '${p.pic}', this)" 
+                     class="patient-card p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-indigo-300 hover:shadow-md cursor-pointer transition-all flex items-center justify-between group relative overflow-hidden mb-2">
                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 transition-opacity group-hover:opacity-100 indicator-bar"></div>
-                    <div class="pl-1">
-                        <p class="font-bold text-slate-700 group-hover:text-indigo-700 text-sm md:text-base transition-colors">${p.name}</p>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded">${p.hn}</span>
-                            <span class="text-[10px] text-slate-400 flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${p.phone}</span>
+                    
+                    <div class="flex items-center gap-3 pl-1 w-full">
+                        <img src="${profileImg}" class="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0 bg-slate-50" onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23cbd5e1\'%3E%3Cpath d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/%3E%3C/svg%3E'">
+                        <div class="min-w-0">
+                            <p class="font-bold text-slate-700 group-hover:text-indigo-700 text-sm md:text-base transition-colors truncate">${p.name}</p>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded">${p.hn}</span>
+                                <span class="text-[10px] text-slate-400 flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${p.phone}</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-0 -translate-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                    </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function filterPatients() {
@@ -297,7 +302,7 @@
             renderPatientList(filtered);
         }
 
-        async function selectPatient(uid, name, hn, element = null) {
+        async function selectPatient(uid, name, hn, pic, element = null) {
             // UI Highlight selected card
             if(element) {
                 document.querySelectorAll('.patient-card').forEach(el => {
@@ -311,6 +316,14 @@
             document.getElementById('selectedUid').value = uid;
             document.getElementById('selectedName').innerText = name;
             document.getElementById('selectedHN').innerText = `HN: ${hn}`;
+            
+            // อัปเดตการแสดงรูปในส่วน Header ด้านขวา
+            const headerProfileContainer = document.querySelector('.bg-white\\/20.backdrop-blur-sm.text-white.rounded-full');
+            if (pic && pic !== 'undefined') {
+                headerProfileContainer.innerHTML = `<img src="${pic}" class="w-full h-full object-cover rounded-full">`;
+            } else {
+                headerProfileContainer.innerHTML = `👤`;
+            }
             
             const section = document.getElementById('detailSection');
             section.classList.remove('opacity-30', 'pointer-events-none');
@@ -334,7 +347,7 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    currentPatientInfo = data.patient; // เก็บโปรไฟล์คนไข้ไว้เตรียมให้หมอแก้ไข
+                    currentPatientInfo = data.patient; 
                     currentPatientHistory = data.history; 
                     renderCharts(data.history);
                     renderApptHistory(data.appointments);
@@ -500,7 +513,7 @@
                     Swal.fire({ title: 'สำเร็จ!', text: 'นัดหมายถูกบันทึกและส่งแจ้งเตือนแล้ว', icon: 'success', confirmButtonColor: '#4f46e5' });
                     document.getElementById('apptForm').reset();
                     const hn = document.getElementById('selectedHN').innerText.replace('HN: ','').trim();
-                    if(hn && hn !== '-') selectPatient(payload.uid, payload.name, hn);
+                    if(hn && hn !== '-') selectPatient(payload.uid, payload.name, hn, currentPatientInfo?.pic);
                 } else throw new Error(result.message);
             } catch (err) {
                 Swal.fire('Error', err.message, 'error');
@@ -552,7 +565,7 @@
                     const uid = document.getElementById('selectedUid').value;
                     const name = document.getElementById('selectedName').innerText;
                     const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '').trim();
-                    selectPatient(uid, name, hn);
+                    selectPatient(uid, name, hn, currentPatientInfo?.pic);
                 } else throw new Error(result.message);
             } catch (err) {
                 Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
@@ -613,7 +626,7 @@
                             const uid = document.getElementById('selectedUid').value;
                             const name = document.getElementById('selectedName').innerText;
                             const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '').trim();
-                            selectPatient(uid, name, hn);
+                            selectPatient(uid, name, hn, currentPatientInfo?.pic);
                         } else throw new Error(resData.message);
                     } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); }
                 }
@@ -639,7 +652,7 @@
             document.body.removeChild(link);
         }
 
-        // 🌟 ฟังก์ชันใหม่: แก้ไขประวัติคนไข้แบบเต็ม
+        // 🌟 ฟังก์ชัน: แก้ไขประวัติคนไข้แบบเต็ม
         function editPatientProfile() {
             if (!currentPatientInfo) {
                 Swal.fire('แจ้งเตือน', 'กรุณาเลือกคนไข้ก่อนแก้ไขประวัติ', 'warning');
@@ -707,7 +720,7 @@
             });
         }
 
-        // 🌟 ฟังก์ชันใหม่: ให้เจ้าหน้าที่บันทึกสุขภาพ (น้ำหนัก/ความดัน) แทนคนไข้
+        // 🌟 ฟังก์ชัน: ให้เจ้าหน้าที่บันทึกสุขภาพ (น้ำหนัก/ความดัน) แทนคนไข้
         function logVitalsForPatient() {
             if (!currentPatientInfo) {
                 Swal.fire('แจ้งเตือน', 'กรุณาเลือกคนไข้ก่อนบันทึกสุขภาพ', 'warning');
@@ -751,13 +764,12 @@
                 if (result.isConfirmed) {
                     try {
                         Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
-                        // นำข้อมูลไปใช้ร่วมกับ Action add_daily_health เดิมได้เลย
                         const payload = { action: "add_daily_health", uid: currentPatientInfo.uid, weight: result.value.weight, sys: result.value.sys, dia: result.value.dia };
                         const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
                         const resData = await res.json();
                         if(resData.success) {
                             Swal.fire({ title: 'สำเร็จ', text: 'บันทึกข้อมูลสุขภาพและแจ้งคนไข้แล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
-                            selectPatient(currentPatientInfo.uid, currentPatientInfo.name, currentPatientInfo.hn); // รีเฟรชกราฟ
+                            selectPatient(currentPatientInfo.uid, currentPatientInfo.name, currentPatientInfo.hn, currentPatientInfo.pic); // รีเฟรชกราฟ
                         } else throw new Error(resData.message);
                     } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); }
                 }
