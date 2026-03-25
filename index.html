@@ -23,7 +23,7 @@
     </div>
 
     <!-- Dashboard View -->
-    <div id="dashboardView" class="hidden max-w-md mx-auto">
+    <div id="dashboardView" class="hidden max-w-md mx-auto relative">
         <div class="bg-teal-600 text-white p-6 rounded-b-[3rem] shadow-xl mb-6">
             <h1 class="text-2xl font-bold text-center mb-6">KidneyCare Dashboard</h1>
             <div class="flex items-center space-x-4">
@@ -37,7 +37,12 @@
         </div>
 
         <div class="px-5 space-y-6">
-            <!-- 📊 Weight Trend Chart (ใหม่!) -->
+            <!-- ปุ่มบันทึกสุขภาพรายวัน (ใหม่) -->
+            <button onclick="openHealthModal()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-3xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
+                <span class="text-2xl">➕</span> <span class="text-xl">บันทึกสุขภาพวันนี้</span>
+            </button>
+
+            <!-- 📊 Weight Trend Chart -->
             <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
                 <h3 class="text-lg font-bold text-teal-700 mb-4 flex items-center">
                     <span class="mr-2">📈</span> แนวโน้มน้ำหนักตัว
@@ -73,7 +78,34 @@
                 </div>
             </div>
             
-            <button onclick="liff.closeWindow()" class="w-full bg-slate-200 text-slate-600 font-bold py-4 rounded-3xl mb-10">ออกจากแอป</button>
+            <button onclick="liff.closeWindow()" class="w-full bg-slate-200 text-slate-600 font-bold py-4 rounded-3xl mb-10 hover:bg-slate-300 transition-colors">ออกจากแอป</button>
+        </div>
+    </div>
+
+    <!-- Modal บันทึกสุขภาพรายวัน (ใหม่) -->
+    <div id="healthModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-teal-700 flex items-center gap-2"><span>📝</span> บันทึกข้อมูลวันนี้</h2>
+                <button onclick="closeHealthModal()" class="text-slate-400 hover:text-slate-600 text-3xl leading-none">&times;</button>
+            </div>
+            <form id="dailyHealthForm" onsubmit="handleDailyHealth(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-600 mb-1">น้ำหนักตัว (กิโลกรัม)</label>
+                    <input type="number" step="0.1" id="dailyWeight" required placeholder="เช่น 65.5" class="w-full p-4 rounded-xl border-2 border-slate-100 outline-none focus:border-teal-500 bg-slate-50 text-lg">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">ความดันบน (SYS)</label>
+                        <input type="number" id="dailySys" placeholder="120" class="w-full p-4 rounded-xl border-2 border-slate-100 outline-none focus:border-teal-500 bg-slate-50 text-center">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">ความดันล่าง (DIA)</label>
+                        <input type="number" id="dailyDia" placeholder="80" class="w-full p-4 rounded-xl border-2 border-slate-100 outline-none focus:border-teal-500 bg-slate-50 text-center">
+                    </div>
+                </div>
+                <button type="submit" id="saveDailyBtn" class="w-full bg-teal-600 text-white font-bold py-4 rounded-xl shadow-lg mt-6 active:scale-95 transition-all text-lg">บันทึกข้อมูล</button>
+            </form>
         </div>
     </div>
 
@@ -87,11 +119,11 @@
             <input type="hidden" id="uid">
             <input type="text" id="name" required placeholder="ชื่อ-นามสกุล" class="w-full p-4 rounded-2xl border-2 border-slate-100 outline-none focus:border-teal-500">
             <div class="flex gap-4">
-                <input type="tel" id="phone" required placeholder="เบอร์โทรศัพท์" class="flex-1 p-4 rounded-2xl border-2 border-slate-100 outline-none">
-                <input type="number" id="age" required placeholder="อายุ" class="w-20 p-4 rounded-2xl border-2 border-slate-100 outline-none text-center">
+                <input type="tel" id="phone" required placeholder="เบอร์โทรศัพท์" class="flex-1 p-4 rounded-2xl border-2 border-slate-100 outline-none focus:border-teal-500">
+                <input type="number" id="age" required placeholder="อายุ" class="w-20 p-4 rounded-2xl border-2 border-slate-100 outline-none text-center focus:border-teal-500">
             </div>
-            <textarea id="disease" placeholder="โรคประจำตัว/แพ้ยา" class="w-full p-4 rounded-2xl border-2 border-slate-100 outline-none h-24"></textarea>
-            <button type="submit" id="regBtn" class="w-full bg-teal-600 text-white font-bold py-5 rounded-2xl shadow-lg">ลงทะเบียน</button>
+            <textarea id="disease" placeholder="โรคประจำตัว/แพ้ยา" class="w-full p-4 rounded-2xl border-2 border-slate-100 outline-none focus:border-teal-500 h-24"></textarea>
+            <button type="submit" id="regBtn" class="w-full bg-teal-600 text-white font-bold py-5 rounded-2xl shadow-lg text-xl active:scale-95 transition-transform">ลงทะเบียน</button>
         </form>
     </div>
 
@@ -166,7 +198,7 @@
             const list = document.getElementById('apptList');
             if (data.appointments.length > 0) {
                 list.innerHTML = data.appointments.map(a => `
-                    <div class="p-4 bg-teal-50 rounded-2xl border-l-8 border-teal-500 flex justify-between items-center shadow-sm">
+                    <div class="p-4 bg-teal-50 rounded-2xl border-l-8 border-teal-500 flex justify-between items-center shadow-sm mb-2">
                         <div>
                             <p class="font-bold text-teal-900">${a.date}</p>
                             <p class="text-slate-600 text-sm">⏰ ${a.time}</p>
@@ -174,6 +206,60 @@
                         <span class="px-3 py-1 bg-white text-teal-600 rounded-full text-[10px] font-bold border border-teal-200 uppercase">${a.status}</span>
                     </div>
                 `).join('');
+            }
+        }
+
+        // ฟังก์ชันเปิด/ปิด Modal สุขภาพ
+        function openHealthModal() {
+            document.getElementById('healthModal').classList.remove('hidden');
+        }
+
+        function closeHealthModal() {
+            document.getElementById('healthModal').classList.add('hidden');
+            document.getElementById('dailyHealthForm').reset();
+        }
+
+        // ฟังก์ชันบันทึกสุขภาพรายวัน
+        async function handleDailyHealth(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveDailyBtn');
+            btn.disabled = true; 
+            btn.innerText = "กำลังบันทึก...";
+
+            const payload = {
+                action: "add_daily_health",
+                uid: document.getElementById('uid').value,
+                weight: document.getElementById('dailyWeight').value,
+                sys: document.getElementById('dailySys').value,
+                dia: document.getElementById('dailyDia').value
+            };
+
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                
+                if(result.success) {
+                    Swal.fire({
+                        title: 'บันทึกสำเร็จ!',
+                        text: 'ข้อมูลสุขภาพวันนี้ถูกบันทึกเรียบร้อยแล้ว',
+                        icon: 'success',
+                        confirmButtonColor: '#0d9488'
+                    }).then(() => {
+                        closeHealthModal();
+                        // รีเฟรชหน้าเพื่อโหลดกราฟใหม่
+                        location.reload();
+                    });
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+                btn.disabled = false; 
+                btn.innerText = "บันทึกข้อมูล";
             }
         }
 
