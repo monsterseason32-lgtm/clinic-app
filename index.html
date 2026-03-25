@@ -3,137 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KidneyCare - คลินิกชุมชนอุ่นใจ</title>
+    <title>KidneyCare - คลินิกอุ่นใจ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: 'Noto Sans Thai', sans-serif; overflow-x: hidden; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        .hidden { display: none; }
+        body { 
+            font-family: 'Noto Sans Thai', sans-serif; 
+            background-color: #f8fafc; 
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        .hidden { display: none !important; }
+        
+        /* ป้องกันการซูมหน้าจออัตโนมัติบนมือถือ */
         input[type="text"], input[type="tel"], input[type="number"], textarea { font-size: 16px !important; }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .bottom-sheet { transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* Animations */
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Bottom Sheet Styles */
+        .bottom-sheet {
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+            will-change: transform;
+        }
         .bottom-sheet.show { transform: translateY(0); }
-        .modal-overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        
+        .modal-overlay {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
         .modal-overlay.show { opacity: 1; pointer-events: auto; }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom UI Elements */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 8px 32px rgba(148, 163, 184, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .mesh-bg {
+            background-color: #0d9488;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(189,100%,56%,1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(160,100%,46%,1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(199,100%,56%,1) 0px, transparent 50%);
+        }
     </style>
 </head>
-<body class="text-slate-800 pb-10">
+<body class="text-slate-800 pb-12 antialiased selection:bg-teal-200">
 
-    <div id="loader" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-teal-50 to-white transition-opacity duration-500">
-        <div class="relative flex justify-center items-center mb-6">
-            <div class="absolute animate-ping inline-flex h-20 w-20 rounded-full bg-teal-400 opacity-20"></div>
-            <div class="relative bg-teal-500 text-white p-4 rounded-full shadow-lg shadow-teal-200">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+    <!-- ================= 1. หน้าจอ Loading ================= -->
+    <div id="loader" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 transition-opacity duration-500">
+        <div class="relative flex justify-center items-center mb-8">
+            <div class="absolute animate-ping inline-flex h-24 w-24 rounded-full bg-teal-400 opacity-20"></div>
+            <div class="relative bg-gradient-to-tr from-teal-500 to-cyan-400 text-white w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-xl shadow-teal-200 rotate-3 transform transition-transform">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             </div>
         </div>
-        <p id="loaderStatus" class="text-xl font-bold text-teal-800 tracking-wide">กำลังเตรียมความพร้อม...</p>
+        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">KidneyCare</h2>
+        <p id="loaderStatus" class="text-slate-500 mt-2 font-medium">กำลังเตรียมระบบ...</p>
     </div>
 
-    <div id="dashboardView" class="hidden max-w-md mx-auto relative min-h-screen animate-fade-in">
-        <div class="bg-gradient-to-br from-teal-500 to-emerald-600 text-white pb-16 pt-8 px-6 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
-            <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full bg-white/10 blur-2xl"></div>
+    <!-- ================= 2. แดชบอร์ดคนไข้ (Main App) ================= -->
+    <div id="dashboardView" class="hidden max-w-md mx-auto relative min-h-screen">
+        
+        <!-- Header Profile (Mesh Gradient) -->
+        <div class="mesh-bg text-white pb-20 pt-10 px-6 rounded-b-[2.5rem] shadow-lg shadow-teal-100 relative">
             <div class="flex items-center gap-5 relative z-10">
                 <div class="relative shrink-0">
-                    <img id="dashImg" src="" class="w-20 h-20 rounded-full border-[3px] border-white/70 shadow-md bg-teal-100 object-cover" onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2394a3b8\'%3E%3Cpath d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/%3E%3C/svg%3E';">
+                    <img id="dashImg" src="" class="w-20 h-20 rounded-full border-4 border-white/40 shadow-lg object-cover bg-teal-50" onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23cbd5e1\'%3E%3Cpath d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/%3E%3C/svg%3E';">
+                    <div class="absolute bottom-1 right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-teal-100 text-[10px] font-semibold tracking-wider uppercase mb-0.5">ยินดีต้อนรับ</p>
-                    <p id="dashName" class="text-2xl font-bold truncate tracking-tight">...</p>
-                    <span id="dashHN" class="mt-1.5 inline-block bg-white/20 px-2.5 py-1 rounded-lg text-xs font-mono shadow-sm">...</span>
+                    <p class="text-teal-50 text-[10px] font-bold tracking-widest uppercase mb-1 opacity-90">คลินิกอุ่นใจ</p>
+                    <p id="dashName" class="text-2xl font-bold truncate tracking-tight text-white mb-1.5">...</p>
+                    <span id="dashHN" class="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-mono font-medium shadow-sm border border-white/10">...</span>
                 </div>
             </div>
         </div>
 
-        <div class="px-5 space-y-5 -mt-10 relative z-20">
-            <button onclick="openHealthModal()" class="w-full bg-white text-teal-600 border border-slate-100 font-bold py-4 rounded-[1.5rem] shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform">
-                <div class="bg-teal-50 p-2 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></div>
-                <span class="text-lg">บันทึกสุขภาพประจำวัน</span>
+        <!-- Content Cards -->
+        <div class="px-5 space-y-5 -mt-10 relative z-20 fade-in">
+            
+            <!-- Hero Action Button -->
+            <button onclick="openHealthModal()" class="w-full bg-white text-teal-600 border border-slate-50 font-bold py-4 px-2 rounded-[2rem] shadow-[0_10px_40px_-10px_rgba(13,148,136,0.2)] flex items-center justify-center gap-4 active:scale-95 transition-all duration-200 group hover:border-teal-100">
+                <div class="bg-teal-50 group-hover:bg-teal-100 p-3 rounded-2xl transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                </div>
+                <div class="text-left">
+                    <span class="block text-lg text-slate-800 leading-tight">บันทึกสุขภาพ</span>
+                    <span class="block text-xs text-slate-400 font-medium mt-0.5">น้ำหนักและความดันวันนี้</span>
+                </div>
             </button>
 
-            <div class="glass-card p-5 rounded-[2rem] shadow-sm border border-white/50">
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 mb-4"><span class="bg-indigo-50 text-indigo-600 p-1.5 rounded-lg">📈</span> สถิติน้ำหนักล่าสุด</h3>
-                <div class="h-[180px] w-full bg-slate-50/80 rounded-2xl p-2 border border-slate-100"><canvas id="patientWeightChart"></canvas></div>
+            <!-- กราฟสุขภาพ -->
+            <div class="glass-card p-6 rounded-[2rem]">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <span class="bg-indigo-50 text-indigo-600 w-8 h-8 rounded-xl flex items-center justify-center">📈</span> 
+                        สถิติน้ำหนัก 7 วัน
+                    </h3>
+                </div>
+                <div class="h-[180px] w-full bg-slate-50/50 rounded-2xl p-2 border border-slate-100/50">
+                    <canvas id="patientWeightChart"></canvas>
+                </div>
             </div>
             
-            <div class="glass-card p-5 rounded-[2rem] shadow-sm border border-white/50">
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 mb-4"><span class="bg-teal-50 text-teal-600 p-1.5 rounded-lg">🩺</span> ประวัติส่วนตัว</h3>
+            <!-- ประวัติส่วนตัว -->
+            <div class="glass-card p-6 rounded-[2rem]">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 mb-5">
+                    <span class="bg-teal-50 text-teal-600 w-8 h-8 rounded-xl flex items-center justify-center">🩺</span> 
+                    ประวัติส่วนตัว
+                </h3>
+                
                 <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div class="bg-slate-50/80 p-3.5 rounded-2xl border"><p class="text-slate-400 text-[10px] font-bold uppercase mb-1">อายุ (ปี)</p><p id="dashAge" class="text-lg font-bold text-slate-700">...</p></div>
-                    <div class="bg-slate-50/80 p-3.5 rounded-2xl border"><p class="text-slate-400 text-[10px] font-bold uppercase mb-1">เบอร์โทรศัพท์</p><p id="dashPhone" class="text-sm font-bold text-slate-700 mt-1">...</p></div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100/80">
+                        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">อายุ</p>
+                        <p class="text-lg font-bold text-slate-800"><span id="dashAge">...</span> <span class="text-sm text-slate-500 font-normal">ปี</span></p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100/80">
+                        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">เบอร์โทรศัพท์</p>
+                        <p id="dashPhone" class="text-sm font-bold text-slate-800 mt-1">...</p>
+                    </div>
                 </div>
-                <div class="p-3.5 bg-rose-50/50 rounded-2xl border flex gap-3 items-start">
-                    <div class="bg-rose-100 text-rose-500 p-1.5 rounded-lg mt-0.5"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
-                    <div><p class="text-rose-400 text-[10px] font-bold uppercase mb-0.5">โรคประจำตัว / แพ้ยา</p><p id="dashDisease" class="text-sm font-bold text-rose-700">...</p></div>
+                
+                <div class="p-4 bg-rose-50/50 rounded-2xl border border-rose-100/50 flex gap-4 items-start">
+                    <div class="bg-rose-100 text-rose-500 p-2 rounded-xl shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-rose-400 text-[10px] font-bold uppercase tracking-widest mb-1">โรคประจำตัว / แพ้ยา</p>
+                        <p id="dashDisease" class="text-sm font-bold text-rose-800 leading-snug">...</p>
+                    </div>
                 </div>
             </div>
 
-            <div class="glass-card p-5 rounded-[2rem] shadow-sm border border-white/50">
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 mb-4"><span class="bg-blue-50 text-blue-600 p-1.5 rounded-lg">📅</span> คิวตรวจของคุณ</h3>
+            <!-- รายการนัดหมาย -->
+            <div class="glass-card p-6 rounded-[2rem]">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 mb-5">
+                    <span class="bg-blue-50 text-blue-600 w-8 h-8 rounded-xl flex items-center justify-center">📅</span> 
+                    คิวตรวจของคุณ
+                </h3>
                 <div id="apptList" class="space-y-3">
-                    <div class="p-8 text-center bg-slate-50/80 rounded-2xl border border-dashed"><p class="text-slate-400 text-sm font-medium">ไม่มีรายการนัดหมาย</p></div>
+                    <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">🗓️</div>
+                        <p class="text-slate-500 font-medium text-sm">ไม่มีรายการนัดหมาย</p>
+                    </div>
                 </div>
             </div>
             
-            <button onclick="liff.closeWindow()" class="w-full bg-slate-200/50 text-slate-500 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-colors mt-4">ออกจากแอปพลิเคชัน</button>
+            <button onclick="liff.closeWindow()" class="w-full bg-slate-200/50 text-slate-500 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-colors mt-4 mb-8">ปิดแอปพลิเคชัน</button>
         </div>
     </div>
 
-    <!-- หน้าลงทะเบียน -->
-    <div id="registerView" class="hidden min-h-screen bg-white">
-        <div class="bg-teal-600 text-white pt-12 pb-16 px-8 rounded-b-[3rem] text-center shadow-md relative">
-            <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm text-3xl">📝</div>
-            <h1 class="text-3xl font-bold">ทำประวัติคนไข้</h1>
-            <p class="text-teal-100 mt-2 text-sm">กรุณาให้ข้อมูลเพื่อให้คุณหมอดูแลได้แม่นยำขึ้นค่ะ</p>
+    <!-- ================= 3. หน้าลงทะเบียน (Registration View) ================= -->
+    <div id="registerView" class="hidden min-h-screen bg-slate-50 pb-10">
+        <div class="bg-gradient-to-b from-teal-600 to-teal-700 text-white pt-16 pb-20 px-8 rounded-b-[3rem] text-center shadow-lg relative">
+            <div class="absolute inset-0 overflow-hidden rounded-b-[3rem]"><div class="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div></div>
+            <div class="w-20 h-20 bg-white/20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 backdrop-blur-md border border-white/20 shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight">สร้างประวัติคนไข้</h1>
+            <p class="text-teal-100 mt-3 text-sm opacity-90">ข้อมูลของคุณจะถูกเก็บเป็นความลับ<br>เพื่อการดูแลรักษาที่แม่นยำ</p>
         </div>
         
-        <form id="regForm" class="px-6 py-8 space-y-5 max-w-md mx-auto -mt-10 relative z-10 bg-white mx-4 rounded-3xl shadow-lg border" onsubmit="handleRegister(event)">
+        <form id="regForm" class="px-6 py-8 space-y-5 max-w-md mx-auto -mt-12 relative z-10 glass-card mx-4 rounded-[2.5rem]" onsubmit="handleRegister(event)">
             <input type="hidden" id="uid">
-            <div class="space-y-1"><label class="block text-[10px] font-bold text-slate-500 uppercase pl-1">ชื่อ - นามสกุล</label><input type="text" id="name" required class="w-full p-4 rounded-xl border bg-slate-50/50 outline-none focus:border-teal-500"></div>
-            <div class="flex gap-4">
-                <div class="flex-1 space-y-1"><label class="block text-[10px] font-bold text-slate-500 uppercase pl-1">เบอร์โทรศัพท์</label><input type="tel" id="phone" required class="w-full p-4 rounded-xl border bg-slate-50/50 outline-none focus:border-teal-500"></div>
-                <div class="w-28 space-y-1"><label class="block text-[10px] font-bold text-slate-500 uppercase text-center">อายุ</label><input type="number" id="age" required class="w-full p-4 rounded-xl border bg-slate-50/50 text-center outline-none focus:border-teal-500"></div>
+            
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-500 pl-2">ชื่อ - นามสกุล</label>
+                <input type="text" id="name" required placeholder="ระบุชื่อและนามสกุลจริง" class="w-full p-4 rounded-2xl border-0 bg-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500 shadow-inner transition-all text-sm">
             </div>
-            <div class="space-y-1"><label class="block text-[10px] font-bold text-slate-500 uppercase pl-1">โรคประจำตัว / แพ้ยา</label><textarea id="disease" rows="2" class="w-full p-4 rounded-xl border bg-slate-50/50 resize-none outline-none focus:border-teal-500"></textarea></div>
-            <button type="submit" id="regBtn" class="w-full bg-teal-600 text-white font-bold text-lg py-4 rounded-xl shadow-lg active:scale-95 transition-all mt-4">ส่งข้อมูลลงทะเบียน</button>
+            
+            <div class="flex gap-4">
+                <div class="flex-1 space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-500 pl-2">เบอร์โทรศัพท์</label>
+                    <input type="tel" id="phone" required placeholder="08x-xxx-xxxx" class="w-full p-4 rounded-2xl border-0 bg-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500 shadow-inner transition-all text-sm">
+                </div>
+                <div class="w-28 space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-500 text-center">อายุ</label>
+                    <input type="number" id="age" required placeholder="ปี" class="w-full p-4 rounded-2xl border-0 bg-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500 shadow-inner transition-all text-sm text-center">
+                </div>
+            </div>
+            
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-500 pl-2">โรคประจำตัว / ประวัติแพ้ยา</label>
+                <textarea id="disease" rows="3" placeholder="ระบุโรคประจำตัว หากไม่มีให้พิมพ์ว่า ไม่มี" class="w-full p-4 rounded-2xl border-0 bg-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500 shadow-inner transition-all text-sm resize-none"></textarea>
+            </div>
+            
+            <button type="submit" id="regBtn" class="w-full bg-slate-800 text-white font-bold text-lg py-4 rounded-2xl shadow-xl shadow-slate-200 hover:bg-slate-900 active:scale-95 transition-all mt-6">
+                บันทึกและเริ่มใช้งาน
+            </button>
         </form>
     </div>
 
-    <!-- หน้าต่างบันทึกสุขภาพ -->
-    <div id="modalOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 modal-overlay" onclick="closeHealthModal()"></div>
+    <!-- ================= 4. Bottom Sheet บันทึกสุขภาพ ================= -->
+    <div id="modalOverlay" class="fixed inset-0 bg-slate-900/40 z-40 modal-overlay" onclick="closeHealthModal()"></div>
     <div id="healthModal" class="fixed bottom-0 left-0 right-0 z-50 bottom-sheet max-w-md mx-auto">
-        <div class="bg-white rounded-t-[2.5rem] p-6 pb-10 shadow-2xl relative">
-            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold flex items-center gap-2">📝 บันทึกสุขภาพวันนี้</h2>
-                <button onclick="closeHealthModal()" class="text-slate-400 bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center font-bold">&times;</button>
+        <div class="bg-white rounded-t-[2.5rem] p-6 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] relative">
+            <!-- Drag Handle -->
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
+            
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                    <div class="bg-teal-50 text-teal-600 w-10 h-10 rounded-full flex items-center justify-center text-lg">📝</div> 
+                    บันทึกสุขภาพ
+                </h2>
+                <button onclick="closeHealthModal()" class="text-slate-400 bg-slate-50 hover:bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold transition-colors">&times;</button>
             </div>
+            
             <form id="healthForm" onsubmit="submitDailyHealth(event)">
-                <div class="space-y-4">
-                    <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 pl-1">น้ำหนักตัว (กิโลกรัม)</label><input type="number" step="0.1" id="dailyWeight" required class="w-full p-4 rounded-xl border bg-slate-50/50 text-lg text-center outline-none focus:border-teal-500"></div>
+                <div class="space-y-5">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 text-center">น้ำหนักตัว (กิโลกรัม)</label>
+                        <input type="number" step="0.1" id="dailyWeight" required placeholder="0.0" class="w-full p-2 bg-transparent text-center text-4xl font-bold text-teal-600 outline-none placeholder:text-slate-300">
+                    </div>
+                    
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 pl-1 text-center">ความดันบน (SYS)</label><input type="number" id="dailySys" class="w-full p-4 rounded-xl border bg-slate-50/50 text-center font-bold outline-none focus:border-teal-500"></div>
-                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 pl-1 text-center">ความดันล่าง (DIA)</label><input type="number" id="dailyDia" class="w-full p-4 rounded-xl border bg-slate-50/50 text-center font-bold outline-none focus:border-teal-500"></div>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 text-center">ความดันบน (SYS)</label>
+                            <input type="number" id="dailySys" placeholder="--" class="w-full p-2 bg-transparent text-center text-2xl font-bold text-slate-700 outline-none placeholder:text-slate-300">
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 text-center">ความดันล่าง (DIA)</label>
+                            <input type="number" id="dailyDia" placeholder="--" class="w-full p-2 bg-transparent text-center text-2xl font-bold text-slate-700 outline-none placeholder:text-slate-300">
+                        </div>
                     </div>
                 </div>
-                <button type="submit" id="btnSaveHealth" class="w-full bg-teal-600 text-white font-bold text-lg py-4 rounded-xl shadow-lg active:scale-95 transition-transform mt-6">บันทึกและแจ้งคุณหมอ</button>
+                
+                <button type="submit" id="btnSaveHealth" class="w-full bg-teal-600 text-white font-bold text-lg py-4 rounded-[1.5rem] shadow-lg shadow-teal-200 hover:bg-teal-700 active:scale-95 transition-all mt-8">
+                    ยืนยันและส่งให้คุณหมอ
+                </button>
             </form>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script>
+        // ==========================================
+        // 🚨 ตั้งค่าสำคัญ: ระบุ ID และ URL
+        // ==========================================
         const LIFF_ID = "2009580376-INQkgBY4"; 
-        // 🚨 นำลิงก์จาก Apps Script อันใหม่มาใส่ตรงนี้นะครับ
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwSA7bgT1h3H0qRQwBPFi53Eg2riLpMQ7-5NlWiwfvqFNkEVfutfaY8GQ5cSLGRHi-q/exec";
 
+        // ==========================================
+        // Core Functions
+        // ==========================================
         async function initApp() {
             const timeout = setTimeout(() => {
                 const status = document.getElementById('loaderStatus');
-                if(status) { status.innerText = "การเชื่อมต่อล่าช้า..."; status.style.color = "#f97316"; }
+                if(status) { status.innerText = "การเชื่อมต่อล่าช้า..."; status.classList.add("text-orange-500"); }
             }, 10000);
 
             try {
@@ -157,11 +287,11 @@
                     document.getElementById('loader').classList.add('hidden');
                     if (data.exists) showDashboard(data.patient, data.appointments, data.history, profile.pictureUrl);
                     else document.getElementById('registerView').classList.remove('hidden');
-                }, 400);
+                }, 500);
 
             } catch (err) {
                 clearTimeout(timeout);
-                Swal.fire({ title: 'ข้อผิดพลาดการเชื่อมต่อ', text: err.message, icon: 'error' }).then(() => location.reload());
+                Swal.fire({ title: 'ข้อผิดพลาดการเชื่อมต่อ', text: err.message, icon: 'error', confirmButtonColor: '#0d9488', customClass: { popup: 'rounded-[2rem]' } }).then(() => location.reload());
             }
         }
 
@@ -171,68 +301,120 @@
             document.getElementById('dashHN').innerText = `HN: ${patient.hn}`;
             document.getElementById('dashAge').innerText = patient.age;
             document.getElementById('dashPhone').innerText = patient.phone;
-            document.getElementById('dashDisease').innerText = patient.disease || "ไม่ระบุ";
+            document.getElementById('dashDisease').innerText = patient.disease || "ไม่มี";
             if(pic) document.getElementById('dashImg').src = pic;
 
+            // Render Chart
             if (history && history.labels && history.labels.length > 0) {
                 const ctx = document.getElementById('patientWeightChart').getContext('2d');
                 Chart.defaults.font.family = "'Noto Sans Thai', sans-serif";
                 new Chart(ctx, {
                     type: 'line',
-                    data: { labels: history.labels, datasets: [{ label: 'น้ำหนัก (kg)', data: history.weights, borderColor: '#0d9488', backgroundColor: 'rgba(13, 148, 136, 0.1)', fill: true, tension: 0.4, borderWidth: 3 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { border: {display: false} }, x: { grid: {display: false}, border: {display: false} } } }
+                    data: { 
+                        labels: history.labels, 
+                        datasets: [{ 
+                            label: 'น้ำหนัก (kg)', data: history.weights, 
+                            borderColor: '#0d9488', backgroundColor: 'rgba(13, 148, 136, 0.1)', 
+                            fill: true, tension: 0.4, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff', pointBorderColor: '#0d9488'
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, maintainAspectRatio: false, 
+                        plugins: { legend: { display: false } }, 
+                        scales: { 
+                            y: { border: {display: false}, grid: {color: '#f1f5f9'} }, 
+                            x: { grid: {display: false}, border: {display: false} } 
+                        } 
+                    }
                 });
             } else {
-                document.getElementById('patientWeightChart').parentElement.innerHTML = '<div class="h-full flex justify-center items-center text-slate-400 text-xs">ยังไม่มีข้อมูลน้ำหนักตัว</div>';
+                document.getElementById('patientWeightChart').parentElement.innerHTML = '<div class="h-full flex flex-col justify-center items-center text-slate-400"><div class="text-3xl mb-2 opacity-50">⚖️</div><p class="text-xs font-medium">ยังไม่มีข้อมูลน้ำหนักตัว</p></div>';
             }
 
+            // Render Appointments
             const list = document.getElementById('apptList');
             if (appointments && appointments.length > 0) {
-                list.innerHTML = appointments.map(a => `
-                    <div class="bg-white border rounded-2xl p-4 shadow-sm relative overflow-hidden mb-3">
-                        <div class="absolute left-0 top-0 bottom-0 w-1.5 ${a.status === 'รอยืนยัน' ? 'bg-amber-400' : 'bg-teal-500'}"></div>
+                list.innerHTML = appointments.map(a => {
+                    const isConfirmed = a.status === 'รอยืนยัน';
+                    return `
+                    <div class="bg-white border ${isConfirmed ? 'border-amber-100' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative overflow-hidden mb-3">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 ${isConfirmed ? 'bg-amber-400' : 'bg-teal-500'}"></div>
                         <div class="pl-2 flex justify-between items-start">
-                            <div><p class="font-bold text-base">${a.date}</p><p class="text-slate-500 text-xs mt-1">⏰ ${a.time} | 🩺 ${a.doctor || 'พยาบาล'}</p></div>
-                            <span class="px-2 py-1 ${a.status === 'รอยืนยัน' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-teal-50 text-teal-600 border-teal-100'} rounded-lg text-[10px] font-bold border">${a.status}</span>
+                            <div>
+                                <p class="font-bold text-slate-800 text-base">${a.date}</p>
+                                <p class="text-slate-500 text-xs mt-1 flex items-center gap-1.5"><span class="bg-slate-50 px-1 rounded">⏰</span> ${a.time}</p>
+                                <p class="text-slate-500 text-xs mt-1 flex items-center gap-1.5"><span class="bg-slate-50 px-1 rounded">🩺</span> ${a.doctor || 'ทีมพยาบาล'}</p>
+                            </div>
+                            <span class="px-2.5 py-1 flex items-center gap-1 ${isConfirmed ? 'bg-amber-50 text-amber-600' : 'bg-teal-50 text-teal-600'} rounded-lg text-[10px] font-bold">
+                                ${isConfirmed ? '⏳ ' : '✅ '}${a.status}
+                            </span>
                         </div>
-                        ${a.note ? `<div class="mt-3 ml-2 p-2 bg-slate-50 rounded-lg text-xs border"><b>ฝากจากคุณหมอ:</b> ${a.note}</div>` : ''}
-                    </div>`).join('');
+                        ${a.note ? `<div class="mt-4 p-3 bg-slate-50 rounded-xl text-xs text-slate-600 border border-slate-100"><span class="font-bold text-teal-600 block mb-0.5">ฝากจากคุณหมอ:</span> ${a.note}</div>` : ''}
+                    </div>`
+                }).join('');
             }
         }
 
-        function openHealthModal() { document.getElementById('modalOverlay').classList.add('show'); document.getElementById('healthModal').classList.add('show'); }
-        function closeHealthModal() { document.getElementById('modalOverlay').classList.remove('show'); document.getElementById('healthModal').classList.remove('show'); document.getElementById('healthForm').reset(); }
+        // --- Bottom Sheet Controls ---
+        function openHealthModal() { 
+            document.getElementById('modalOverlay').classList.add('show'); 
+            document.getElementById('healthModal').classList.add('show'); 
+        }
+        function closeHealthModal() { 
+            document.getElementById('modalOverlay').classList.remove('show'); 
+            document.getElementById('healthModal').classList.remove('show'); 
+            document.getElementById('healthForm').reset(); 
+        }
 
         async function submitDailyHealth(e) {
             e.preventDefault();
             const btn = document.getElementById('btnSaveHealth');
-            btn.disabled = true; btn.innerHTML = '<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div>';
+            const ogText = btn.innerText;
+            btn.disabled = true; btn.innerHTML = '<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto"></div>';
+            
             try {
-                const payload = { action: "add_daily_health", uid: document.getElementById('uid').value, weight: document.getElementById('dailyWeight').value, sys: document.getElementById('dailySys').value, dia: document.getElementById('dailyDia').value };
+                const payload = { 
+                    action: "add_daily_health", 
+                    uid: document.getElementById('uid').value, 
+                    weight: document.getElementById('dailyWeight').value, 
+                    sys: document.getElementById('dailySys').value, 
+                    dia: document.getElementById('dailyDia').value 
+                };
                 const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
                 const result = await res.json();
+                
                 if (result.success) {
                     closeHealthModal();
-                    Swal.fire({ title: 'บันทึกสำเร็จ!', text: 'ข้อมูลส่งให้ทีมพยาบาลแล้วค่ะ', icon: 'success' }).then(() => location.reload());
+                    Swal.fire({ title: 'บันทึกสำเร็จ!', text: 'ข้อมูลส่งให้ทีมพยาบาลแล้วค่ะ', icon: 'success', confirmButtonColor: '#0d9488', customClass: { popup: 'rounded-[2rem]' } }).then(() => location.reload());
                 } else throw new Error(result.message);
-            } catch (error) { Swal.fire('เกิดข้อผิดพลาด', error.message, 'error'); btn.disabled = false; btn.innerText = "บันทึกและแจ้งคุณหมอ"; }
+            } catch (error) { 
+                Swal.fire({ title: 'เกิดข้อผิดพลาด', text: error.message, icon: 'error', confirmButtonColor: '#0d9488', customClass: { popup: 'rounded-[2rem]' } }); 
+                btn.disabled = false; btn.innerText = ogText; 
+            }
         }
 
         async function handleRegister(e) {
             e.preventDefault();
             const btn = document.getElementById('regBtn');
-            btn.disabled = true; btn.innerText = "กำลังดำเนินการ...";
+            const ogText = btn.innerText;
+            btn.disabled = true; btn.innerHTML = '<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto"></div>';
+            
             try {
                 let picUrl = ""; let userLineId = document.getElementById('uid').value;
                 if (liff.isLoggedIn()) { const profile = await liff.getProfile(); picUrl = profile.pictureUrl || ""; if (!userLineId) userLineId = profile.userId; }
+                
                 const res = await fetch(GAS_URL, {
                     method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: "register", uid: userLineId, name: document.getElementById('name').value, phone: document.getElementById('phone').value, age: document.getElementById('age').value, disease: document.getElementById('disease').value, pictureUrl: picUrl })
                 });
                 const result = await res.json();
-                if (result.success) Swal.fire({ title: 'สำเร็จ', text: 'เริ่มใช้งานแอปได้ทันทีค่ะ', icon: 'success' }).then(() => location.reload());
+                
+                if (result.success) Swal.fire({ title: 'สำเร็จ', text: 'เริ่มใช้งานแอปได้ทันทีค่ะ', icon: 'success', confirmButtonColor: '#0d9488', customClass: { popup: 'rounded-[2rem]' } }).then(() => location.reload());
                 else throw new Error(result.message);
-            } catch (error) { Swal.fire('ข้อผิดพลาด', error.message, 'error'); btn.disabled = false; btn.innerText = "ส่งข้อมูลลงทะเบียน"; }
+            } catch (error) { 
+                Swal.fire({ title: 'ข้อผิดพลาด', text: error.message, icon: 'error', confirmButtonColor: '#0d9488', customClass: { popup: 'rounded-[2rem]' } }); 
+                btn.disabled = false; btn.innerText = ogText; 
+            }
         }
 
         window.onload = initApp;
