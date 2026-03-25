@@ -331,27 +331,48 @@
                 document.getElementById('patientWeightChart').parentElement.innerHTML = '<div class="h-full flex flex-col justify-center items-center text-slate-400"><div class="text-3xl mb-2 opacity-50">⚖️</div><p class="text-xs font-medium">ยังไม่มีข้อมูลน้ำหนักตัว</p></div>';
             }
 
-            // Render Appointments
+            // Render Appointments (ปรับ UI ให้คอมแพคตามหน้าเจ้าหน้าที่)
             const list = document.getElementById('apptList');
             if (appointments && appointments.length > 0) {
                 list.innerHTML = appointments.map(a => {
-                    const isConfirmed = a.status === 'รอยืนยัน';
+                    let isConfirmed = a.status === 'รอยืนยัน';
+                    let isDone = a.status === 'ตรวจแล้ว';
+                    
+                    let indicatorColor = isDone ? 'bg-teal-500' : (a.status === 'ยกเลิก' ? 'bg-rose-400' : 'bg-amber-400');
+                    let statusColor = isDone ? 'bg-teal-50 text-teal-600 border-teal-200' : (a.status === 'ยกเลิก' ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-amber-50 text-amber-600 border-amber-200');
+                    
+                    // กรอง Note ที่ว่างเปล่า หรือเป็นแค่ขีด (-) ทิ้งไป เพื่อไม่ให้รกหน้าจอ
+                    let showNote = (a.note && a.note.trim() !== '' && a.note.trim() !== '-');
+
                     return `
-                    <div class="bg-white border ${isConfirmed ? 'border-amber-100' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative overflow-hidden mb-3">
-                        <div class="absolute left-0 top-0 bottom-0 w-1.5 ${isConfirmed ? 'bg-amber-400' : 'bg-teal-500'}"></div>
-                        <div class="pl-2 flex justify-between items-start">
-                            <div>
-                                <p class="font-bold text-slate-800 text-base">${a.date}</p>
-                                <p class="text-slate-500 text-xs mt-1 flex items-center gap-1.5"><span class="bg-slate-50 px-1 rounded">⏰</span> ${a.time}</p>
-                                <p class="text-slate-500 text-xs mt-1 flex items-center gap-1.5"><span class="bg-slate-50 px-1 rounded">🩺</span> ${a.doctor || 'ทีมพยาบาล'}</p>
+                    <div class="relative bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow mb-3 overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 ${indicatorColor}"></div>
+                        <div class="p-4 pl-5">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="pr-2">
+                                    <h4 class="font-bold text-slate-800 text-sm leading-tight mb-1.5">${a.date}</h4>
+                                    <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium">
+                                        <span class="flex items-center gap-1"><span class="text-base leading-none">⏰</span> ${a.time}</span>
+                                        <span class="flex items-center gap-1"><span class="text-base leading-none">🩺</span> ${a.doctor || 'ทีมพยาบาล'}</span>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 px-2 py-1 flex items-center gap-1 ${statusColor} rounded-md text-[10px] font-bold border">
+                                    ${isConfirmed ? '⏳ ' : (isDone ? '✅ ' : '❌ ')}${a.status}
+                                </span>
                             </div>
-                            <span class="px-2.5 py-1 flex items-center gap-1 ${isConfirmed ? 'bg-amber-50 text-amber-600' : 'bg-teal-50 text-teal-600'} rounded-lg text-[10px] font-bold">
-                                ${isConfirmed ? '⏳ ' : '✅ '}${a.status}
-                            </span>
+                            ${showNote ? `
+                            <div class="mt-3 bg-slate-50 p-2.5 rounded-xl text-xs text-slate-600 border border-slate-100">
+                                <span class="font-bold text-teal-600">📝 ฝากจากคุณหมอ:</span> ${a.note}
+                            </div>` : ''}
                         </div>
-                        ${a.note ? `<div class="mt-4 p-3 bg-slate-50 rounded-xl text-xs text-slate-600 border border-slate-100"><span class="font-bold text-teal-600 block mb-0.5">ฝากจากคุณหมอ:</span> ${a.note}</div>` : ''}
                     </div>`
                 }).join('');
+            } else {
+                list.innerHTML = `
+                    <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">🗓️</div>
+                        <p class="text-slate-500 font-medium text-sm">ไม่มีรายการนัดหมาย</p>
+                    </div>`;
             }
         }
 
