@@ -112,14 +112,15 @@
                         </div>
                     </div>
                     
-                    <div class="flex flex-wrap gap-2 w-full md:w-auto relative z-10 mt-2 md:mt-0">
-                        <button onclick="exportToCSV()" class="flex-1 md:flex-none bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 backdrop-blur-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                            <span class="whitespace-nowrap">โหลด Excel</span>
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto relative z-10 mt-3 md:mt-0">
+                        <button onclick="editPatientProfile()" class="flex-1 md:flex-none bg-white text-indigo-600 hover:bg-indigo-50 px-3 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center gap-1.5">
+                            ✏️ แก้ไขประวัติ
                         </button>
-                        <button onclick="testNotification()" id="testBtn" class="flex-1 md:flex-none bg-white text-indigo-600 hover:bg-indigo-50 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-                            <span class="whitespace-nowrap">ทดสอบแจ้งเตือน</span>
+                        <button onclick="logVitalsForPatient()" class="flex-1 md:flex-none bg-emerald-400 text-white hover:bg-emerald-500 px-3 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center gap-1.5">
+                            ➕ บันทึกสุขภาพ
+                        </button>
+                        <button onclick="exportToCSV()" class="flex-1 md:flex-none bg-white/15 hover:bg-white/25 text-white border border-white/20 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 backdrop-blur-sm">
+                            📥 Excel
                         </button>
                     </div>
                 </div>
@@ -231,6 +232,7 @@
         let weightChartInstance = null;
         let bpChartInstance = null;
         let currentPatientHistory = null;
+        let currentPatientInfo = null; // เพิ่มตัวแปรเก็บข้อมูลโปรไฟล์คนไข้
 
         function checkPin() {
             const input = document.getElementById('pinInput').value;
@@ -332,6 +334,7 @@
                 const data = await res.json();
                 
                 if (data.success) {
+                    currentPatientInfo = data.patient; // เก็บโปรไฟล์คนไข้ไว้เตรียมให้หมอแก้ไข
                     currentPatientHistory = data.history; 
                     renderCharts(data.history);
                     renderApptHistory(data.appointments);
@@ -634,6 +637,131 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        // 🌟 ฟังก์ชันใหม่: แก้ไขประวัติคนไข้แบบเต็ม
+        function editPatientProfile() {
+            if (!currentPatientInfo) {
+                Swal.fire('แจ้งเตือน', 'กรุณาเลือกคนไข้ก่อนแก้ไขประวัติ', 'warning');
+                return;
+            }
+            Swal.fire({
+                title: '✏️ แก้ไขประวัติคนไข้',
+                html: `
+                    <div class="text-left space-y-3 mt-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">ชื่อ - นามสกุล</label>
+                            <input type="text" id="editName" value="${currentPatientInfo.name || ''}" class="w-full p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm bg-slate-50 focus:bg-white transition-colors">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">เบอร์โทรศัพท์</label>
+                                <input type="tel" id="editPhone" value="${currentPatientInfo.phone || ''}" class="w-full p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm bg-slate-50 focus:bg-white transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">อายุ (ปี)</label>
+                                <input type="number" id="editAge" value="${currentPatientInfo.age || ''}" class="w-full p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm text-center bg-slate-50 focus:bg-white transition-colors">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">ส่วนสูง (ซม.)</label>
+                            <input type="number" id="editHeight" value="${currentPatientInfo.height || ''}" placeholder="เช่น 165" class="w-full p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm bg-slate-50 focus:bg-white transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">โรคประจำตัว / ประวัติแพ้ยา</label>
+                            <textarea id="editDisease" rows="2" class="w-full p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-sm resize-none bg-slate-50 focus:bg-white transition-colors">${currentPatientInfo.disease || ''}</textarea>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#cbd5e1',
+                confirmButtonText: 'บันทึกข้อมูล',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const name = document.getElementById('editName').value;
+                    if (!name) { Swal.showValidationMessage('กรุณาระบุชื่อ-นามสกุล'); return false; }
+                    return {
+                        name: name,
+                        phone: document.getElementById('editPhone').value,
+                        age: document.getElementById('editAge').value,
+                        height: document.getElementById('editHeight').value,
+                        disease: document.getElementById('editDisease').value
+                    }
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                        const payload = { action: "update_patient_info", uid: currentPatientInfo.uid, ...result.value };
+                        const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+                        const resData = await res.json();
+                        if(resData.success) {
+                            Swal.fire({ title: 'สำเร็จ', text: 'แก้ไขข้อมูลคนไข้เรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false });
+                            document.getElementById('selectedName').innerText = result.value.name;
+                            currentPatientInfo = { ...currentPatientInfo, ...result.value };
+                            loadPatients(); // อัปเดตรายชื่อด้านซ้าย
+                        } else throw new Error(resData.message);
+                    } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); }
+                }
+            });
+        }
+
+        // 🌟 ฟังก์ชันใหม่: ให้เจ้าหน้าที่บันทึกสุขภาพ (น้ำหนัก/ความดัน) แทนคนไข้
+        function logVitalsForPatient() {
+            if (!currentPatientInfo) {
+                Swal.fire('แจ้งเตือน', 'กรุณาเลือกคนไข้ก่อนบันทึกสุขภาพ', 'warning');
+                return;
+            }
+            Swal.fire({
+                title: '🏥 บันทึกสุขภาพแทนคนไข้',
+                html: `
+                    <div class="text-left space-y-4 mt-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">น้ำหนักตัว (กก.)</label>
+                            <input type="number" step="0.1" id="logWeight" placeholder="เช่น 65.5" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-sm text-center bg-slate-50 focus:bg-white transition-colors">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">ความดันบน (SYS)</label>
+                                <input type="number" id="logSys" placeholder="120" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-sm text-center bg-slate-50 focus:bg-white transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">ความดันล่าง (DIA)</label>
+                                <input type="number" id="logDia" placeholder="80" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-sm text-center bg-slate-50 focus:bg-white transition-colors">
+                            </div>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#cbd5e1',
+                confirmButtonText: 'บันทึกข้อมูล',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const weight = document.getElementById('logWeight').value;
+                    if (!weight) { Swal.showValidationMessage('กรุณาระบุน้ำหนักตัว'); return false; }
+                    return {
+                        weight: weight,
+                        sys: document.getElementById('logSys').value,
+                        dia: document.getElementById('logDia').value
+                    }
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                        // นำข้อมูลไปใช้ร่วมกับ Action add_daily_health เดิมได้เลย
+                        const payload = { action: "add_daily_health", uid: currentPatientInfo.uid, weight: result.value.weight, sys: result.value.sys, dia: result.value.dia };
+                        const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+                        const resData = await res.json();
+                        if(resData.success) {
+                            Swal.fire({ title: 'สำเร็จ', text: 'บันทึกข้อมูลสุขภาพและแจ้งคนไข้แล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
+                            selectPatient(currentPatientInfo.uid, currentPatientInfo.name, currentPatientInfo.hn); // รีเฟรชกราฟ
+                        } else throw new Error(resData.message);
+                    } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); }
+                }
+            });
         }
 
         async function testNotification() {
