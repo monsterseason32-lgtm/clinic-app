@@ -54,7 +54,6 @@
                 <div id="clinicDashboard" class="bg-white rounded-[2rem] shadow-sm border overflow-hidden">
                     <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white flex justify-between items-start">
                         <div><h2 class="text-2xl font-bold">ภาพรวมวันนี้</h2><p id="dashTodayDate" class="text-indigo-100 mt-1">กำลังโหลด...</p></div>
-                        <button onclick="openBroadcastModal()" class="bg-white/20 px-4 py-2 rounded-xl text-sm font-bold border border-white/20">📢 บรอดแคสต์</button>
                     </div>
                     <div class="p-8">
                         <div class="grid grid-cols-3 gap-4 mb-8">
@@ -214,15 +213,6 @@
             if(res.success) { Swal.fire('สำเร็จ', 'อัปเดตข้อมูลแล้ว', 'success'); selectPatient(currentPatientInfo.uid, currentPatientInfo.name, currentPatientInfo.hn, currentPatientInfo.pic); }
         }
 
-        async function openBroadcastModal() {
-            const { value: text } = await Swal.fire({ title: '📢 ประกาศถึงคนไข้ทุกคน', input: 'textarea', inputPlaceholder: 'พิมพ์ข้อความ...', showCancelButton: true });
-            if(text) {
-                Swal.fire({ title: 'กำลังส่ง...', didOpen: () => Swal.showLoading() });
-                const res = await callAPI({ action: "broadcast_message", message: text });
-                if(res.success) Swal.fire('สำเร็จ', `ส่งให้คนไข้ ${res.count} ท่านแล้ว`, 'success');
-            }
-        }
-
         async function openHealthEdit() {
             const { value: v } = await Swal.fire({ 
                 title: '➕ บันทึกสุขภาพแทนคนไข้', 
@@ -232,6 +222,17 @@
             if(v && v[0]) {
                 const res = await callAPI({ action: "add_daily_health", uid: currentPatientInfo.uid, weight: v[0], sys: v[1], dia: v[2] });
                 if(res.success) { Swal.fire('สำเร็จ', 'บันทึกข้อมูลสุขภาพแล้ว', 'success'); selectPatient(currentPatientInfo.uid, currentPatientInfo.name, currentPatientInfo.hn, currentPatientInfo.pic); }
+            }
+        }
+
+        async function sendDirectMessage() {
+            const { value: text } = await Swal.fire({ title: '💬 ส่งข้อความหาคนไข้', input: 'textarea', inputPlaceholder: 'พิมพ์ข้อความที่ต้องการส่งตรงเข้า LINE...', showCancelButton: true });
+            if (text) {
+                try {
+                    Swal.fire({ title: 'กำลังส่ง...', didOpen: () => Swal.showLoading() });
+                    const res = await callAPI({ action: "send_direct_message", uid: document.getElementById('selectedUid').value, message: text });
+                    if (res.success) Swal.fire('สำเร็จ', 'ส่งข้อความแล้ว', 'success');
+                } catch (e) { Swal.fire('Error', e.message, 'error'); }
             }
         }
 
