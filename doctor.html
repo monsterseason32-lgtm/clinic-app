@@ -2,168 +2,215 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ระบบจัดการคลินิก - สำหรับเจ้าหน้าที่</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Noto Sans Thai', sans-serif; }
+        body { font-family: 'Noto Sans Thai', sans-serif; background-color: #f8fafc; }
         .hidden { display: none; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 10px; }
-        .tab-active { border-bottom: 4px solid #4f46e5; color: #4f46e5; font-weight: bold; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: #94a3b8; }
+        
+        /* สไตล์สำหรับแท็บแบบใหม่ */
+        .tab-btn { color: #64748b; transition: all 0.3s ease; }
+        .tab-active { background-color: white; color: #4f46e5; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: 600; border-radius: 0.5rem; }
+        
+        /* ป้องกันการซูมหน้าจอเมื่อกดป้อนข้อความบน iOS */
+        input[type="text"], input[type="date"], select, input[type="password"] { font-size: 16px; }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen">
+<body class="text-slate-800">
 
     <!-- 1. หน้าเข้าสู่ระบบ (Simple PIN) -->
-    <div id="loginView" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm text-center border border-slate-200">
-            <div class="bg-indigo-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span class="text-4xl">🔐</span>
+    <div id="loginView" class="min-h-screen flex items-center justify-center p-5 bg-gradient-to-br from-indigo-50 to-blue-50">
+        <div class="bg-white p-8 rounded-[2rem] shadow-xl w-full max-w-sm text-center border border-white">
+            <div class="bg-indigo-100 text-indigo-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
             <h1 class="text-2xl font-bold text-slate-800 mb-2">เจ้าหน้าที่คลินิก</h1>
-            <p class="text-slate-500 mb-6 text-sm">กรุณาใส่รหัสผ่านเพื่อเข้าใช้งานระบบหลังบ้าน</p>
+            <p class="text-slate-500 mb-8 text-sm">เข้าสู่ระบบเพื่อจัดการข้อมูลนัดหมาย</p>
             
             <input type="password" id="pinInput" placeholder="รหัสผ่าน 4 หลัก" 
-                   class="w-full p-4 text-center text-3xl tracking-[1rem] border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 mb-6 bg-slate-50 font-bold">
+                   class="w-full p-4 text-center text-3xl tracking-[1rem] border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 mb-6 bg-slate-50 font-bold transition-all placeholder:text-sm placeholder:tracking-normal placeholder:font-normal">
             
-            <button onclick="checkPin()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all">
+            <button onclick="checkPin()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-lg shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">
                 เข้าสู่ระบบ
             </button>
         </div>
     </div>
 
     <!-- 2. หน้าแผงควบคุม (Doctor Dashboard) -->
-    <div id="adminView" class="hidden animate-in fade-in duration-500">
-        <nav class="bg-white shadow-sm p-4 sticky top-0 z-50 border-b border-slate-200">
+    <div id="adminView" class="hidden">
+        <!-- Navbar -->
+        <nav class="bg-white/80 backdrop-blur-md shadow-sm p-4 sticky top-0 z-50 border-b border-slate-200">
             <div class="max-w-7xl mx-auto flex justify-between items-center">
                 <div class="flex items-center space-x-3">
-                    <div class="bg-indigo-600 text-white p-2 rounded-xl">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+                    <div class="bg-gradient-to-tr from-indigo-600 to-blue-500 text-white p-2.5 rounded-xl shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                     </div>
-                    <span class="text-xl font-bold text-slate-800">ระบบจัดการนัดหมาย & ประวัติสุขภาพ</span>
+                    <div>
+                        <h1 class="text-lg md:text-xl font-bold text-slate-800 leading-tight">ระบบจัดการคลินิก</h1>
+                        <p class="text-[10px] md:text-xs text-slate-500 font-medium">KidneyCare Admin Portal</p>
+                    </div>
                 </div>
-                <button onclick="location.reload()" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors">
-                    ออกจากระบบ
+                <button onclick="location.reload()" class="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-50 hover:text-red-600 transition-colors flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span class="hidden md:inline">ออกจากระบบ</span>
                 </button>
             </div>
         </nav>
 
-        <main class="max-w-7xl mx-auto p-4 md:p-8 grid md:grid-cols-12 gap-8">
+        <main class="max-w-7xl mx-auto p-4 md:p-6 grid lg:grid-cols-12 gap-6 items-start">
             
             <!-- ฝั่งซ้าย: รายชื่อคนไข้ (4 คอลัมน์) -->
-            <section class="md:col-span-4 space-y-6">
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-bold text-slate-800 flex items-center">
-                            <span class="mr-2">👥</span> รายชื่อคนไข้
+            <section class="lg:col-span-4 space-y-4">
+                <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-5">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span class="bg-indigo-50 text-indigo-600 p-1.5 rounded-lg">👥</span> รายชื่อคนไข้
                         </h2>
-                        <button onclick="loadPatients()" class="text-indigo-600 text-sm font-bold hover:underline">🔄 รีเฟรช</button>
+                        <button onclick="loadPatients()" class="text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 2v6h6"/></svg>
+                            รีเฟรช
+                        </button>
                     </div>
                     
-                    <div class="relative mb-6">
-                        <input type="text" id="searchInput" onkeyup="filterPatients()" placeholder="ค้นหาชื่อ, รหัส HN..." 
-                               class="w-full p-3 border-2 border-slate-50 rounded-xl outline-none focus:border-indigo-500 pl-10 bg-slate-50">
-                        <span class="absolute left-3 top-3 opacity-30">🔍</span>
+                    <div class="relative mb-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3.5 top-3.5 text-slate-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input type="text" id="searchInput" onkeyup="filterPatients()" placeholder="ค้นหาชื่อ, รหัส HN, เบอร์โทร..." 
+                               class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-50 pl-10 bg-slate-50 transition-all text-sm">
                     </div>
                     
-                    <div id="patientList" class="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                        <div class="flex flex-col items-center py-20 text-slate-400">
-                            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
-                            <p>กำลังดึงข้อมูล...</p>
+                    <div id="patientList" class="space-y-2 max-h-[550px] overflow-y-auto pr-1 custom-scrollbar pb-4">
+                        <div class="flex flex-col items-center py-16 text-slate-400">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3"></div>
+                            <p class="text-sm">กำลังดึงข้อมูลอัปเดต...</p>
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- ฝั่งขวา: รายละเอียดและการจัดการ (8 คอลัมน์) -->
-            <section id="detailSection" class="md:col-span-8 opacity-30 pointer-events-none transition-all duration-300">
+            <section id="detailSection" class="lg:col-span-8 opacity-30 pointer-events-none transition-opacity duration-300">
                 
-                <!-- บัตรข้อมูลคนไข้ (Header) -->
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 mb-6 flex justify-between items-center">
-                    <div class="flex items-center gap-4">
-                        <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl shadow-inner">👤</div>
+                <!-- บัตรข้อมูลคนไข้ (Header Gradient) -->
+                <div class="bg-gradient-to-r from-indigo-600 to-blue-500 p-6 rounded-[2rem] shadow-md mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+                    <!-- ลวดลายพื้นหลัง -->
+                    <svg class="absolute right-0 top-0 opacity-10 transform translate-x-1/3 -translate-y-1/4" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    
+                    <div class="flex items-center gap-4 relative z-10">
+                        <div class="w-16 h-16 bg-white/20 backdrop-blur-sm text-white rounded-full flex items-center justify-center text-3xl border border-white/30 shadow-sm shrink-0">👤</div>
                         <div>
-                            <p id="selectedName" class="text-2xl font-bold text-slate-800">กรุณาเลือกคนไข้ด้านซ้าย</p>
-                            <p id="selectedHN" class="text-sm text-slate-500 font-mono mt-1">-</p>
+                            <p id="selectedName" class="text-xl md:text-2xl font-bold text-white mb-0.5">เลือกคนไข้จากรายชื่อ</p>
+                            <p id="selectedHN" class="text-sm text-indigo-100 font-mono bg-white/10 inline-block px-2 py-0.5 rounded-md">-</p>
                             <input type="hidden" id="selectedUid">
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="exportToCSV()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2 rounded-xl text-sm font-bold transition-colors border border-emerald-200">
-                            📥 โหลด Excel
+                    
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto relative z-10 mt-2 md:mt-0">
+                        <button onclick="exportToCSV()" class="flex-1 md:flex-none bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 backdrop-blur-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                            <span class="whitespace-nowrap">โหลด Excel</span>
                         </button>
-                        <button onclick="testNotification()" id="testBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
-                            🔔 ทดสอบ
+                        <button onclick="testNotification()" id="testBtn" class="flex-1 md:flex-none bg-white text-indigo-600 hover:bg-indigo-50 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                            <span class="whitespace-nowrap">ทดสอบแจ้งเตือน</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Tabs Navigation -->
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="flex border-b border-slate-100">
-                        <button onclick="switchTab('healthTab')" id="btn-healthTab" class="flex-1 py-4 text-center font-semibold text-slate-500 hover:bg-slate-50 tab-active">📈 ประวัติสุขภาพ</button>
-                        <button onclick="switchTab('apptTab')" id="btn-apptTab" class="flex-1 py-4 text-center font-semibold text-slate-500 hover:bg-slate-50">📅 ลงคิวนัดหมาย</button>
+                <!-- Tabs Navigation (Modern Segmented Control) -->
+                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-2 border-b border-slate-100 bg-slate-50/50">
+                        <div class="flex bg-slate-100 p-1 rounded-xl">
+                            <button onclick="switchTab('healthTab')" id="btn-healthTab" class="tab-btn tab-active flex-1 py-2.5 text-center text-sm flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                ข้อมูลสุขภาพ
+                            </button>
+                            <button onclick="switchTab('apptTab')" id="btn-apptTab" class="tab-btn flex-1 py-2.5 text-center text-sm flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                                ประวัตินัดหมาย
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Tab 1: ประวัติสุขภาพ (Health & Charts) -->
-                    <div id="healthTab" class="p-6">
-                        <div id="healthLoader" class="py-10 text-center text-slate-400 hidden">
-                            <div class="animate-spin inline-block h-8 w-8 border-b-2 border-indigo-600 rounded-full mb-2"></div>
-                            <p>กำลังโหลดข้อมูลสุขภาพ...</p>
+                    <div id="healthTab" class="p-5 md:p-6">
+                        <div id="healthLoader" class="py-12 text-center text-slate-400 hidden">
+                            <div class="animate-spin inline-block h-8 w-8 border-b-2 border-indigo-600 rounded-full mb-3"></div>
+                            <p class="text-sm">กำลังโหลดข้อมูลกราฟสุขภาพ...</p>
                         </div>
                         
-                        <div id="healthContent">
-                            <h3 class="font-bold text-lg text-slate-700 mb-4">น้ำหนักตัว 7 วันล่าสุด (IDWG Trend)</h3>
-                            <div class="h-64 w-full bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-6">
-                                <canvas id="patientWeightChart"></canvas>
+                        <div id="healthContent" class="space-y-6">
+                            <div>
+                                <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2 text-base">
+                                    <span class="bg-indigo-100 text-indigo-600 p-1 rounded">⚖️</span> น้ำหนักตัว 7 วันล่าสุด
+                                </h3>
+                                <div class="h-[200px] md:h-[250px] w-full bg-slate-50/50 rounded-2xl p-2 md:p-4 border border-slate-100">
+                                    <canvas id="patientWeightChart"></canvas>
+                                </div>
                             </div>
 
-                            <h3 class="font-bold text-lg text-slate-700 mb-4">ความดันโลหิต (Blood Pressure)</h3>
-                            <div class="h-64 w-full bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                                <canvas id="patientBpChart"></canvas>
+                            <hr class="border-slate-100">
+
+                            <div>
+                                <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2 text-base">
+                                    <span class="bg-red-100 text-red-500 p-1 rounded">💓</span> ความดันโลหิต (SYS/DIA)
+                                </h3>
+                                <div class="h-[200px] md:h-[250px] w-full bg-slate-50/50 rounded-2xl p-2 md:p-4 border border-slate-100">
+                                    <canvas id="patientBpChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Tab 2: นัดหมาย (Appointments) -->
-                    <div id="apptTab" class="p-6 hidden">
-                        <div class="grid md:grid-cols-2 gap-8">
+                    <div id="apptTab" class="p-5 md:p-6 hidden">
+                        <div class="grid lg:grid-cols-2 gap-8 lg:gap-10">
+                            
                             <!-- ฟอร์มลงคิว -->
-                            <div>
-                                <h3 class="font-bold text-lg text-slate-700 mb-4">บันทึกนัดหมายใหม่</h3>
+                            <div class="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
+                                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                    <span class="bg-blue-100 text-blue-600 p-1 rounded">📝</span> ลงคิวนัดหมายใหม่
+                                </h3>
                                 <form id="apptForm" onsubmit="createAppointment(event)" class="space-y-4">
                                     <div>
-                                        <label class="block text-sm font-bold text-slate-600 mb-1">วันที่นัด</label>
-                                        <input type="date" id="apptDate" required class="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                                        <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">วันที่นัด</label>
+                                        <input type="date" id="apptDate" required class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-50 bg-white transition-all text-sm text-slate-700">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-bold text-slate-600 mb-1">ช่วงเวลา</label>
-                                        <select id="apptTime" required class="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                                        <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">ช่วงเวลา</label>
+                                        <select id="apptTime" required class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-50 bg-white transition-all text-sm text-slate-700">
                                             <option value="09:00 - 10:00">09:00 - 10:00</option>
                                             <option value="10:00 - 11:00">10:00 - 11:00</option>
                                             <option value="11:00 - 12:00">11:00 - 12:00</option>
                                             <option value="13:00 - 14:00">13:00 - 14:00</option>
                                             <option value="14:00 - 15:00">14:00 - 15:00</option>
+                                            <option value="15:00 - 16:00">15:00 - 16:00</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-bold text-slate-600 mb-1">แพทย์ผู้ตรวจ</label>
-                                        <input type="text" id="doctorName" placeholder="เช่น นพ.สมชาย" class="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                                        <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">แพทย์ผู้ตรวจ (ถ้ามี)</label>
+                                        <input type="text" id="doctorName" placeholder="ระบุชื่อแพทย์" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-50 bg-white transition-all text-sm text-slate-700">
                                     </div>
-                                    <button type="submit" id="saveBtn" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-md hover:bg-indigo-700 active:scale-95 transition-all mt-2">
-                                        ยืนยันการนัดหมาย
+                                    <button type="submit" id="saveBtn" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-indigo-700 active:scale-95 transition-all mt-2 text-sm flex justify-center items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                        บันทึกคิวนัด
                                     </button>
                                 </form>
                             </div>
+
                             <!-- ประวัตินัดหมาย -->
                             <div>
-                                <h3 class="font-bold text-lg text-slate-700 mb-4">ประวัติการนัดหมาย</h3>
-                                <div id="patientAppts" class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                    <span class="bg-indigo-100 text-indigo-600 p-1 rounded">📋</span> ประวัติคิวตรวจ
+                                </h3>
+                                <div id="patientAppts" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
                                     <!-- List injected by JS -->
                                 </div>
                             </div>
@@ -176,13 +223,14 @@
     </div>
 
     <script>
+        // 🌟 ใส่ URL ของ Google Apps Script ของคุณที่นี่
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwSA7bgT1h3H0qRQwBPFi53Eg2riLpMQ7-5NlWiwfvqFNkEVfutfaY8GQ5cSLGRHi-q/exec";
         const STAFF_PIN = "1234"; 
 
         let allPatients = [];
         let weightChartInstance = null;
         let bpChartInstance = null;
-        let currentPatientHistory = null; // ตัวแปรเก็บประวัติไว้สำหรับ Export Excel
+        let currentPatientHistory = null;
 
         function checkPin() {
             const input = document.getElementById('pinInput').value;
@@ -191,12 +239,14 @@
                 document.getElementById('adminView').classList.remove('hidden');
                 loadPatients();
             } else {
-                Swal.fire('รหัสผ่านผิด!', 'กรุณาตรวจสอบรหัสผ่านอีกครั้ง', 'error');
+                Swal.fire({ title: 'รหัสผ่านผิด!', text: 'กรุณาตรวจสอบรหัสผ่านอีกครั้ง', icon: 'error', confirmButtonColor: '#4f46e5' });
                 document.getElementById('pinInput').value = "";
             }
         }
 
         async function loadPatients() {
+            const list = document.getElementById('patientList');
+            list.innerHTML = `<div class="flex flex-col items-center py-16 text-slate-400"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3"></div><p class="text-sm">กำลังโหลดข้อมูล...</p></div>`;
             try {
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
@@ -209,24 +259,30 @@
                     renderPatientList(allPatients);
                 }
             } catch (err) {
-                document.getElementById('patientList').innerHTML = `<p class="text-center text-red-400 py-10 font-bold">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล</p>`;
+                list.innerHTML = `<div class="bg-red-50 text-red-500 p-4 rounded-xl text-center text-sm font-medium border border-red-100">❌ เกิดข้อผิดพลาดในการดึงข้อมูล<br><span class="text-xs font-normal mt-1 block">กรุณารีเฟรชหน้าจอ</span></div>`;
             }
         }
 
         function renderPatientList(list) {
             const container = document.getElementById('patientList');
             if (list.length === 0) {
-                container.innerHTML = '<div class="text-center text-slate-400 py-10 bg-slate-50 rounded-2xl">ไม่พบข้อมูล</div>';
+                container.innerHTML = '<div class="text-center text-slate-400 py-10 bg-slate-50 rounded-xl text-sm border border-dashed border-slate-200">ไม่พบข้อมูลคนไข้</div>';
                 return;
             }
             container.innerHTML = list.map(p => `
-                <div onclick="selectPatient('${p.uid}', '${p.name}', '${p.hn}')" 
-                     class="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-indigo-500 hover:bg-indigo-50 cursor-pointer transition-all flex justify-between items-center group mb-2">
-                    <div>
-                        <p class="font-bold text-slate-700 group-hover:text-indigo-700">${p.name}</p>
-                        <p class="text-xs text-slate-400 font-mono mt-1">${p.hn} | 📞 ${p.phone}</p>
+                <div onclick="selectPatient('${p.uid}', '${p.name}', '${p.hn}', this)" 
+                     class="patient-card p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-indigo-300 hover:shadow-md cursor-pointer transition-all flex justify-between items-center group relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 transition-opacity group-hover:opacity-100 indicator-bar"></div>
+                    <div class="pl-1">
+                        <p class="font-bold text-slate-700 group-hover:text-indigo-700 text-sm md:text-base transition-colors">${p.name}</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[10px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded">${p.hn}</span>
+                            <span class="text-[10px] text-slate-400 flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${p.phone}</span>
+                        </div>
                     </div>
-                    <div class="text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">▶</div>
+                    <div class="text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-0 -translate-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </div>
                 </div>
             `).join('');
         }
@@ -239,16 +295,31 @@
             renderPatientList(filtered);
         }
 
-        async function selectPatient(uid, name, hn) {
+        async function selectPatient(uid, name, hn, element = null) {
+            // UI Highlight selected card
+            if(element) {
+                document.querySelectorAll('.patient-card').forEach(el => {
+                    el.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50/30');
+                    el.querySelector('.indicator-bar').classList.remove('opacity-100');
+                });
+                element.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50/30');
+                element.querySelector('.indicator-bar').classList.add('opacity-100');
+            }
+
             document.getElementById('selectedUid').value = uid;
             document.getElementById('selectedName').innerText = name;
             document.getElementById('selectedHN').innerText = `HN: ${hn}`;
             
             const section = document.getElementById('detailSection');
             section.classList.remove('opacity-30', 'pointer-events-none');
-            switchTab('healthTab'); // สลับไปแท็บสุขภาพอัตโนมัติ
+            
+            switchTab('healthTab'); 
 
-            // โหลดข้อมูลสุขภาพของคนไข้คนนี้
+            // Scroll on mobile gracefully
+            if(window.innerWidth < 1024) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
             document.getElementById('healthContent').classList.add('hidden');
             document.getElementById('healthLoader').classList.remove('hidden');
 
@@ -261,7 +332,7 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    currentPatientHistory = data.history; // บันทึกประวัติเตรียมไว้ดาวน์โหลด
+                    currentPatientHistory = data.history; 
                     renderCharts(data.history);
                     renderApptHistory(data.appointments);
                 }
@@ -274,21 +345,21 @@
         }
 
         function renderCharts(history) {
-            // ทำลายกราฟเก่าทิ้งก่อนวาดใหม่ (ป้องกันการซ้อนกัน)
             if (weightChartInstance) weightChartInstance.destroy();
             if (bpChartInstance) bpChartInstance.destroy();
 
             if (!history.labels || history.labels.length === 0) {
-                document.getElementById('patientWeightChart').parentElement.innerHTML = '<p class="text-center text-slate-400 mt-10">ยังไม่มีข้อมูลบันทึกสุขภาพ</p><canvas id="patientWeightChart" class="hidden"></canvas>';
-                document.getElementById('patientBpChart').parentElement.innerHTML = '<canvas id="patientBpChart" class="hidden"></canvas>';
+                document.getElementById('patientWeightChart').parentElement.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" class="mb-2 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg><p class="text-sm">ยังไม่มีข้อมูลบันทึก</p></div><canvas id="patientWeightChart" class="hidden"></canvas>';
+                document.getElementById('patientBpChart').parentElement.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-slate-400"><p class="text-sm">ยังไม่มีข้อมูลบันทึก</p></div><canvas id="patientBpChart" class="hidden"></canvas>';
                 return;
             }
             
-            // คืนค่า canvas เผื่อโดนลบไป
             document.getElementById('patientWeightChart').parentElement.innerHTML = '<canvas id="patientWeightChart"></canvas>';
             document.getElementById('patientBpChart').parentElement.innerHTML = '<canvas id="patientBpChart"></canvas>';
 
-            // 1. วาดกราฟน้ำหนัก
+            Chart.defaults.font.family = "'Noto Sans Thai', sans-serif";
+            Chart.defaults.color = '#64748b';
+
             const ctxW = document.getElementById('patientWeightChart').getContext('2d');
             weightChartInstance = new Chart(ctxW, {
                 type: 'line',
@@ -296,56 +367,62 @@
                     labels: history.labels,
                     datasets: [{
                         label: 'น้ำหนัก (kg)', data: history.weights,
-                        borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                        fill: true, tension: 0.3, borderWidth: 3
+                        borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.15)',
+                        fill: true, tension: 0.4, borderWidth: 3,
+                        pointBackgroundColor: '#ffffff', pointBorderColor: '#4f46e5', pointBorderWidth: 2, pointRadius: 4
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: false, border: {display: false} }, x: { grid: {display: false}, border: {display: false} } }
+                }
             });
 
-            // 2. วาดกราฟความดัน
             const ctxBp = document.getElementById('patientBpChart').getContext('2d');
             bpChartInstance = new Chart(ctxBp, {
                 type: 'bar',
                 data: {
                     labels: history.labels,
                     datasets: [
-                        { label: 'SYS (ตัวบน)', data: history.sys, backgroundColor: '#ef4444', borderRadius: 4 },
-                        { label: 'DIA (ตัวล่าง)', data: history.dia, backgroundColor: '#f59e0b', borderRadius: 4 }
+                        { label: 'SYS (ตัวบน)', data: history.sys, backgroundColor: '#f43f5e', borderRadius: 4, barPercentage: 0.6 },
+                        { label: 'DIA (ตัวล่าง)', data: history.dia, backgroundColor: '#f59e0b', borderRadius: 4, barPercentage: 0.6 }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
+                    scales: { y: { beginAtZero: true, border: {display: false} }, x: { grid: {display: false}, border: {display: false} } }
+                }
             });
         }
 
-        // ฟังก์ชันใหม่: คำนวณวันคงเหลือ
         function formatDaysLeft(dateString) {
             if (!dateString) return '';
             const parts = dateString.split('/');
             if (parts.length !== 3) return '';
             
-            // แปลงวันที่ format dd/MM/yyyy เป็น object Date
             const apptDate = new Date(parts[2], parts[1] - 1, parts[0]);
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // รีเซ็ตเวลาให้เป็นเที่ยงคืนเพื่อเทียบแค่วันที่
+            today.setHours(0, 0, 0, 0); 
             
             const diffTime = apptDate - today;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            if (diffDays === 0) return '<span class="text-orange-600 font-bold ml-1 text-[10px] bg-orange-100 px-2 py-0.5 rounded-full">วันนี้</span>';
-            if (diffDays === 1) return '<span class="text-blue-600 font-bold ml-1 text-[10px] bg-blue-100 px-2 py-0.5 rounded-full">พรุ่งนี้</span>';
+            if (diffDays === 0) return '<span class="text-orange-700 font-bold ml-2 text-[10px] bg-orange-100 px-2 py-0.5 rounded-md border border-orange-200">วันนี้</span>';
+            if (diffDays === 1) return '<span class="text-indigo-700 font-bold ml-2 text-[10px] bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-200">พรุ่งนี้</span>';
             if (diffDays > 1) {
                 if (diffDays >= 30) {
                     const months = Math.floor(diffDays / 30);
                     const days = diffDays % 30;
                     let text = `อีก ${months} เดือน`;
                     if (days > 0) text += ` ${days} วัน`;
-                    return `<span class="text-indigo-600 font-bold ml-1 text-[10px] bg-indigo-100 px-2 py-0.5 rounded-full">${text}</span>`;
+                    return `<span class="text-blue-700 font-bold ml-2 text-[10px] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">${text}</span>`;
                 }
-                return `<span class="text-blue-600 font-bold ml-1 text-[10px] bg-blue-100 px-2 py-0.5 rounded-full">อีก ${diffDays} วัน</span>`;
+                return `<span class="text-blue-700 font-bold ml-2 text-[10px] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">อีก ${diffDays} วัน</span>`;
             }
             if (diffDays < 0) {
-                return `<span class="text-gray-500 font-bold ml-1 text-[10px] bg-gray-200 px-2 py-0.5 rounded-full">ผ่านมาแล้ว ${Math.abs(diffDays)} วัน</span>`;
+                return `<span class="text-slate-500 font-bold ml-2 text-[10px] bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">ผ่านมาแล้ว ${Math.abs(diffDays)} วัน</span>`;
             }
             return '';
         }
@@ -353,30 +430,39 @@
         function renderApptHistory(appointments) {
             const container = document.getElementById('patientAppts');
             if (!appointments || appointments.length === 0) {
-                container.innerHTML = '<p class="text-sm text-slate-400 italic">ไม่พบประวัติการนัดหมาย</p>';
+                container.innerHTML = '<div class="text-center text-slate-400 py-8 bg-slate-50 rounded-xl text-sm border border-dashed border-slate-200">ยังไม่มีประวัติการนัดหมาย</div>';
                 return;
             }
-            container.innerHTML = appointments.map(a => `
-                <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl flex justify-between items-center text-sm mb-2">
+            container.innerHTML = appointments.map(a => {
+                let statusStyle = '';
+                let borderStyle = '';
+                if(a.status === 'ตรวจแล้ว') { statusStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200'; borderStyle = 'border-l-emerald-500'; }
+                else if(a.status === 'ยกเลิก') { statusStyle = 'bg-red-50 text-red-600 border-red-200'; borderStyle = 'border-l-red-400'; }
+                else { statusStyle = 'bg-yellow-50 text-yellow-700 border-yellow-200'; borderStyle = 'border-l-yellow-400'; }
+
+                return `
+                <div class="bg-white border border-slate-100 border-l-4 ${borderStyle} rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:shadow-md">
                     <div>
                         <div class="flex items-center mb-1">
-                            <span class="font-bold text-slate-700">${a.date}</span>
+                            <span class="font-bold text-slate-800 text-sm md:text-base">${a.date}</span>
                             ${formatDaysLeft(a.date)}
                         </div>
-                        <span class="text-slate-500 text-xs">⏰ ${a.time}</span>
-                        <div class="text-xs text-slate-400 mt-1">🩺 ${a.doctor || '-'}</div>
+                        <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium">
+                            <span class="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${a.time}</span>
+                            <span class="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${a.doctor || 'ไม่ระบุ'}</span>
+                        </div>
                     </div>
-                    <div class="flex flex-col items-end gap-1">
-                        <span class="px-2 py-1 ${a.status === 'ตรวจแล้ว' ? 'bg-green-100 text-green-700' : a.status === 'ยกเลิก' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'} border rounded-md text-[10px] font-bold">${a.status}</span>
+                    <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-50">
+                        <span class="px-2.5 py-1 ${statusStyle} border rounded-lg text-[11px] font-bold tracking-wide">${a.status}</span>
                         ${a.status !== 'ตรวจแล้ว' && a.status !== 'ยกเลิก' ? `
-                        <div class="flex gap-1 mt-1">
-                            ${a.status === 'รอยืนยัน' ? `<button onclick="editAppointment('${a.id}', '${a.date}', '${a.time}', '${a.doctor}')" class="px-2 py-1 bg-blue-500 text-white rounded text-[10px] hover:bg-blue-600 transition-colors">✏️ แก้ไข</button>` : ''}
-                            <button onclick="updateApptStatus('${a.id}', 'ตรวจแล้ว')" class="px-2 py-1 bg-green-500 text-white rounded text-[10px] hover:bg-green-600 transition-colors">✅ มาตรวจ</button>
-                            <button onclick="updateApptStatus('${a.id}', 'ยกเลิก')" class="px-2 py-1 bg-red-500 text-white rounded text-[10px] hover:bg-red-600 transition-colors">❌ ยกเลิก</button>
+                        <div class="flex gap-1.5">
+                            ${a.status === 'รอยืนยัน' ? `<button onclick="editAppointment('${a.id}', '${a.date}', '${a.time}', '${a.doctor}')" class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg><span class="hidden sm:inline">แก้ไข</span></button>` : ''}
+                            <button onclick="updateApptStatus('${a.id}', 'ตรวจแล้ว')" class="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition-colors shadow-sm">มาตรวจ</button>
+                            <button onclick="updateApptStatus('${a.id}', 'ยกเลิก')" class="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 transition-colors shadow-sm">ยกเลิก</button>
                         </div>` : ''}
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function switchTab(tabId) {
@@ -392,8 +478,8 @@
         async function createAppointment(e) {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
-            const originalText = btn.innerText;
-            btn.disabled = true; btn.innerHTML = 'กำลังบันทึก...';
+            const originalText = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = '<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> <span>กำลังบันทึก...</span>';
 
             const payload = {
                 action: "add_appointment",
@@ -408,125 +494,84 @@
                 const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
                 const result = await res.json();
                 if (result.success) {
-                    Swal.fire('สำเร็จ!', 'นัดหมายถูกบันทึกและส่งแจ้งเตือนแล้ว', 'success');
+                    Swal.fire({ title: 'สำเร็จ!', text: 'นัดหมายถูกบันทึกและส่งแจ้งเตือนแล้ว', icon: 'success', confirmButtonColor: '#4f46e5' });
                     document.getElementById('apptForm').reset();
-                    // อัปเดตประวัติทันที
-                    selectPatient(payload.uid, payload.name, document.getElementById('selectedHN').innerText.replace('HN: ',''));
-                }
+                    const hn = document.getElementById('selectedHN').innerText.replace('HN: ','').trim();
+                    if(hn && hn !== '-') selectPatient(payload.uid, payload.name, hn);
+                } else throw new Error(result.message);
             } catch (err) {
                 Swal.fire('Error', err.message, 'error');
             } finally {
-                btn.disabled = false; btn.innerText = originalText;
+                btn.disabled = false; btn.innerHTML = originalText;
             }
         }
 
-        async function testNotification() {
-            const uid = document.getElementById('selectedUid').value;
-            if (!uid) return;
-            try {
-                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "test_notification", uid: uid, name: document.getElementById('selectedName').innerText })
-                });
-                Swal.fire({ title: 'ส่งสำเร็จ', text: 'ส่งข้อความทดสอบเข้า LINE คนไข้แล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        }
-
-        // ฟังก์ชันใหม่: ดาวน์โหลดเป็น Excel (CSV)
-        function exportToCSV() {
-            if (!currentPatientHistory || currentPatientHistory.labels.length === 0) {
-                Swal.fire('ไม่มีข้อมูล', 'คนไข้รายนี้ยังไม่มีประวัติสุขภาพให้ดาวน์โหลด', 'info');
-                return;
-            }
-
-            const name = document.getElementById('selectedName').innerText;
-            // เพิ่ม BOM (\uFEFF) เพื่อให้ Excel อ่านภาษาไทยได้ถูกต้อง
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
-            csvContent += "วันที่,น้ำหนัก (kg),ความดัน (SYS),ความดัน (DIA)\n";
-
-            for (let i = 0; i < currentPatientHistory.labels.length; i++) {
-                const date = currentPatientHistory.labels[i];
-                const weight = currentPatientHistory.weights[i] || "-";
-                const sys = currentPatientHistory.sys[i] || "-";
-                const dia = currentPatientHistory.dia[i] || "-";
-                csvContent += `${date},${weight},${sys},${dia}\n`;
-            }
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `ประวัติสุขภาพ_${name}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // ฟังก์ชันจัดการอัปเดตสถานะนัดหมาย (แก้ไขเพิ่มการจดบันทึก)
         async function updateApptStatus(apptId, newStatus) {
             let noteText = "";
-
-            // ถ้าเป็นการกดยืนยันว่า "ตรวจแล้ว" ให้เด้งหน้าต่างกรอกผลการรักษา
             if (newStatus === 'ตรวจแล้ว') {
                 const { value: text, isConfirmed } = await Swal.fire({
-                    title: 'บันทึกผลการรักษา',
+                    title: 'ผลการรักษา',
                     input: 'textarea',
-                    inputLabel: 'ระบุอาการปัจจุบัน, ผลวินิจฉัย หรือยาที่จ่าย (ถ้ามี)',
-                    inputPlaceholder: 'พิมพ์บันทึกของแพทย์ที่นี่...',
+                    inputPlaceholder: 'ระบุอาการ, ผลวินิจฉัย หรือการสั่งยา (บันทึกส่วนตัวแพทย์)',
                     showCancelButton: true,
                     confirmButtonColor: '#10b981',
-                    confirmButtonText: '✅ บันทึกและเสร็จสิ้น',
-                    cancelButtonText: 'ยกเลิก'
+                    cancelButtonColor: '#cbd5e1',
+                    confirmButtonText: 'บันทึกและเสร็จสิ้น',
+                    cancelButtonText: 'ยกเลิก',
+                    customClass: { input: 'rounded-xl border-slate-200 focus:ring-indigo-500' }
                 });
-                
-                if (!isConfirmed) return; // ถ้ายกเลิก ให้หยุดการทำงาน
+                if (!isConfirmed) return; 
                 noteText = text || "-";
             } else {
-                // ถ้าแค่ยกเลิกคิว ก็ถามแบบธรรมดา
-                if(!confirm(`ยืนยันการเปลี่ยนสถานะคิวตรวจเป็น "${newStatus}" ใช่หรือไม่?`)) return;
+                const res = await Swal.fire({
+                    title: 'ยืนยันยกเลิกนัด?',
+                    text: "ระบบจะส่งข้อความยกเลิกไปที่ LINE คนไข้ทันที",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#cbd5e1',
+                    confirmButtonText: 'ยืนยันยกเลิก',
+                    cancelButtonText: 'กลับ'
+                });
+                if(!res.isConfirmed) return;
             }
             
             try {
+                Swal.fire({ title: 'กำลังอัปเดต...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
                 const res = await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: "update_appt", apptId: apptId, status: newStatus, note: noteText })
                 });
                 const result = await res.json();
                 
                 if(result.success) {
-                    Swal.fire({ title: 'สำเร็จ', text: 'บันทึกข้อมูลและอัปเดตสถานะเรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false });
+                    Swal.fire({ title: 'สำเร็จ', text: 'อัปเดตสถานะเรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false });
                     const uid = document.getElementById('selectedUid').value;
                     const name = document.getElementById('selectedName').innerText;
-                    const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '');
+                    const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '').trim();
                     selectPatient(uid, name, hn);
-                } else {
-                    throw new Error(result.message);
-                }
+                } else throw new Error(result.message);
             } catch (err) {
                 Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
             }
         }
 
-        // ฟังก์ชันแก้ไขนัดหมาย (เปลี่ยนวัน, เวลา, แพทย์)
         function editAppointment(apptId, dateStr, timeStr, doctorStr) {
             const parts = dateStr.split('/');
             let isoDate = '';
-            if (parts.length === 3) {
-                isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            }
+            if (parts.length === 3) isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
             
             Swal.fire({
-                title: '✏️ แก้ไขคิวนัดหมาย',
+                title: 'แก้ไขข้อมูลนัดหมาย',
                 html: `
-                    <div class="text-left space-y-3 mt-3">
+                    <div class="text-left space-y-4 mt-4">
                         <div>
-                            <label class="block text-sm font-bold text-slate-600 mb-1">วันที่นัด</label>
-                            <input type="date" id="editApptDate" value="${isoDate}" class="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">วันที่นัด</label>
+                            <input type="date" id="editApptDate" value="${isoDate}" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm">
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-slate-600 mb-1">ช่วงเวลา</label>
-                            <select id="editApptTime" class="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">ช่วงเวลา</label>
+                            <select id="editApptTime" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm">
                                 <option value="09:00 - 10:00" ${timeStr === '09:00 - 10:00' ? 'selected' : ''}>09:00 - 10:00</option>
                                 <option value="10:00 - 11:00" ${timeStr === '10:00 - 11:00' ? 'selected' : ''}>10:00 - 11:00</option>
                                 <option value="11:00 - 12:00" ${timeStr === '11:00 - 12:00' ? 'selected' : ''}>11:00 - 12:00</option>
@@ -536,60 +581,74 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-slate-600 mb-1">แพทย์ผู้ตรวจ</label>
-                            <input type="text" id="editDoctorName" value="${doctorStr && doctorStr !== '-' && doctorStr !== 'undefined' ? doctorStr : ''}" placeholder="เช่น นพ.สมชาย" class="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">แพทย์ผู้ตรวจ</label>
+                            <input type="text" id="editDoctorName" value="${doctorStr && doctorStr !== '-' && doctorStr !== 'undefined' ? doctorStr : ''}" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm">
                         </div>
                     </div>
                 `,
                 showCancelButton: true,
                 confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#cbd5e1',
                 confirmButtonText: 'บันทึกการแก้ไข',
                 cancelButtonText: 'ยกเลิก',
                 preConfirm: () => {
                     const apptDate = document.getElementById('editApptDate').value;
-                    if (!apptDate) {
-                        Swal.showValidationMessage('กรุณาเลือกวันที่นัด');
-                        return false;
-                    }
-                    return {
-                        apptDate: apptDate,
-                        apptTime: document.getElementById('editApptTime').value,
-                        doctorName: document.getElementById('editDoctorName').value
-                    }
+                    if (!apptDate) { Swal.showValidationMessage('กรุณาเลือกวันที่นัด'); return false; }
+                    return { apptDate: apptDate, apptTime: document.getElementById('editApptTime').value, doctorName: document.getElementById('editDoctorName').value }
                 }
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
                         Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
-                        const payload = {
-                            action: "edit_appointment",
-                            apptId: apptId,
-                            apptDate: result.value.apptDate,
-                            apptTime: result.value.apptTime,
-                            doctorName: result.value.doctorName
-                        };
-                        
                         const res = await fetch(GAS_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: JSON.stringify(payload)
+                            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({ action: "edit_appointment", apptId: apptId, apptDate: result.value.apptDate, apptTime: result.value.apptTime, doctorName: result.value.doctorName })
                         });
-                        
                         const resData = await res.json();
                         if(resData.success) {
                             Swal.fire({ title: 'สำเร็จ', text: 'แก้ไขข้อมูลนัดหมายและส่งข้อความแจ้งเตือนแล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
                             const uid = document.getElementById('selectedUid').value;
                             const name = document.getElementById('selectedName').innerText;
-                            const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '');
+                            const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '').trim();
                             selectPatient(uid, name, hn);
-                        } else {
-                            throw new Error(resData.message);
-                        }
-                    } catch (err) {
-                        Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
-                    }
+                        } else throw new Error(resData.message);
+                    } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); }
                 }
             });
+        }
+
+        function exportToCSV() {
+            if (!currentPatientHistory || currentPatientHistory.labels.length === 0) {
+                Swal.fire('ไม่มีข้อมูล', 'คนไข้รายนี้ยังไม่มีประวัติสุขภาพให้ดาวน์โหลด', 'info'); return;
+            }
+            const name = document.getElementById('selectedName').innerText;
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+            csvContent += "วันที่,น้ำหนัก (kg),ความดัน (SYS),ความดัน (DIA)\n";
+            for (let i = 0; i < currentPatientHistory.labels.length; i++) {
+                csvContent += `${currentPatientHistory.labels[i]},${currentPatientHistory.weights[i] || "-"},${currentPatientHistory.sys[i] || "-"},${currentPatientHistory.dia[i] || "-"}\n`;
+            }
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `ประวัติสุขภาพ_${name}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function testNotification() {
+            const uid = document.getElementById('selectedUid').value;
+            if (!uid) return;
+            const btn = document.getElementById('testBtn');
+            const ogHtml = btn.innerHTML;
+            btn.innerHTML = '<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>';
+            try {
+                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "test_notification", uid: uid, name: document.getElementById('selectedName').innerText })
+                });
+                Swal.fire({ title: 'ส่งสำเร็จ', text: 'ส่งข้อความทดสอบเข้า LINE คนไข้แล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
+            } catch (err) { alert("Error: " + err.message); }
+            finally { btn.innerHTML = ogHtml; }
         }
 
         document.getElementById('pinInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPin(); });
