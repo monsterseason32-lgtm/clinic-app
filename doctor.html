@@ -318,9 +318,19 @@
                 return;
             }
             container.innerHTML = appointments.map(a => `
-                <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl flex justify-between items-center text-sm">
-                    <div><span class="font-bold text-slate-700">${a.date}</span> <span class="text-slate-500">(${a.time})</span></div>
-                    <span class="px-2 py-1 bg-white border rounded-md text-xs">${a.status}</span>
+                <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl flex justify-between items-center text-sm mb-2">
+                    <div>
+                        <span class="font-bold text-slate-700">${a.date}</span> <span class="text-slate-500">(${a.time})</span>
+                        <div class="text-xs text-slate-400 mt-1">🩺 ${a.doctor || '-'}</div>
+                    </div>
+                    <div class="flex flex-col items-end gap-1">
+                        <span class="px-2 py-1 ${a.status === 'ตรวจแล้ว' ? 'bg-green-100 text-green-700' : a.status === 'ยกเลิก' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'} border rounded-md text-[10px] font-bold">${a.status}</span>
+                        ${a.status !== 'ตรวจแล้ว' && a.status !== 'ยกเลิก' ? `
+                        <div class="flex gap-1 mt-1">
+                            <button onclick="updateApptStatus('${a.id}', 'ตรวจแล้ว')" class="px-2 py-1 bg-green-500 text-white rounded text-[10px] hover:bg-green-600 transition-colors">✅ มาตรวจ</button>
+                            <button onclick="updateApptStatus('${a.id}', 'ยกเลิก')" class="px-2 py-1 bg-red-500 text-white rounded text-[10px] hover:bg-red-600 transition-colors">❌ ยกเลิก</button>
+                        </div>` : ''}
+                    </div>
                 </div>
             `).join('');
         }
@@ -376,6 +386,33 @@
                 Swal.fire({ title: 'ส่งสำเร็จ', text: 'ส่งข้อความทดสอบเข้า LINE คนไข้แล้ว', icon: 'success', timer: 2000, showConfirmButton: false });
             } catch (err) {
                 alert("Error: " + err.message);
+            }
+        }
+
+        // ฟังก์ชันใหม่: จัดการอัปเดตสถานะนัดหมาย
+        async function updateApptStatus(apptId, newStatus) {
+            if(!confirm(`ยืนยันการเปลี่ยนสถานะคิวตรวจเป็น "${newStatus}" ใช่หรือไม่?`)) return;
+            
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "update_appt", apptId: apptId, status: newStatus })
+                });
+                const result = await res.json();
+                
+                if(result.success) {
+                    Swal.fire({ title: 'สำเร็จ', text: 'อัปเดตสถานะเรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false });
+                    // โหลดข้อมูลคนไข้คนนี้ใหม่เพื่ออัปเดตหน้าจอทันที
+                    const uid = document.getElementById('selectedUid').value;
+                    const name = document.getElementById('selectedName').innerText;
+                    const hn = document.getElementById('selectedHN').innerText.replace('HN: ', '');
+                    selectPatient(uid, name, hn);
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (err) {
+                Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
             }
         }
 
